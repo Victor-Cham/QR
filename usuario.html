@@ -6,24 +6,24 @@
 <title>Usuario - Dashboard</title>
 <link rel="stylesheet" href="css/styles.css">
 <style>
-body { font-family: 'Segoe UI', sans-serif; margin:0; background:#f4f6f8; }
-header { background:#4e54c8; color:#fff; padding:15px; display:flex; justify-content: space-between; align-items:center; }
-header h1 { font-size: 20px; }
-header button { padding:8px 12px; border:none; border-radius:5px; cursor:pointer; background:#fff; color:#4e54c8; font-weight:bold; }
-main { padding:20px; display:flex; flex-wrap: wrap; gap:20px; }
-.card { background:#fff; padding:20px; border-radius:10px; box-shadow:0px 5px 15px rgba(0,0,0,0.1); flex:1 1 300px; min-width:250px; }
-.card h2 { font-size:18px; margin-bottom:10px; color:#333; }
-.card table { width:100%; border-collapse: collapse; }
-.card table th, .card table td { padding:8px; text-align:left; border-bottom:1px solid #ccc; }
+body{font-family:'Segoe UI',sans-serif;margin:0;background:#f4f6f8;}
+header{background:#4e54c8;color:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+header h1{font-size:20px;}
+header button{padding:8px 12px;border:none;border-radius:5px;cursor:pointer;background:#fff;color:#4e54c8;font-weight:bold;}
+main{padding:20px;display:flex;flex-wrap:wrap;gap:20px;}
+.card{background:#fff;padding:20px;border-radius:10px;box-shadow:0px 5px 15px rgba(0,0,0,0.1);flex:1 1 300px;min-width:250px;}
+.card h2{font-size:18px;margin-bottom:10px;color:#333;}
+.card table{width:100%;border-collapse:collapse;}
+.card table th, .card table td{padding:8px;text-align:left;border-bottom:1px solid #ccc;}
+button{padding:5px 8px;border:none;border-radius:5px;background:#4e54c8;color:#fff;cursor:pointer;font-weight:bold;}
+button:hover{opacity:0.9;}
 </style>
 </head>
 <body>
-
 <header>
   <h1>Usuario Dashboard</h1>
   <button onclick="logout()">Cerrar sesión</button>
 </header>
-
 <main>
   <div class="card">
     <h2>Documentos Asignados</h2>
@@ -31,7 +31,6 @@ main { padding:20px; display:flex; flex-wrap: wrap; gap:20px; }
       <tr><th>Nombre</th><th>Tipo</th><th>Link</th><th>Visitas</th></tr>
     </table>
   </div>
-
   <div class="card">
     <h2>Comunicados</h2>
     <table id="comsTable">
@@ -41,54 +40,53 @@ main { padding:20px; display:flex; flex-wrap: wrap; gap:20px; }
 </main>
 
 <script>
-// Verificar sesión
 const usuario = JSON.parse(localStorage.getItem('usuario'));
-if (!usuario) {
-    alert("Acceso denegado");
-    window.location.href = "index.html";
+if(!usuario){alert('Acceso denegado');window.location.href='index.html';}
+function logout(){localStorage.removeItem('usuario');window.location.href='index.html';}
+
+// Cargar Documentos asignados
+async function cargarDocumentos(){
+  const res = await fetch(`https://script.google.com/macros/s/.../exec?sheet=Documentos&usuario=${usuario.UsuarioID}`);
+  const data = await res.json();
+  const table = document.getElementById('docsTable');
+  table.innerHTML='<tr><th>Nombre</th><th>Tipo</th><th>Link</th><th>Visitas</th></tr>';
+  data.forEach(d=>{
+    const row = table.insertRow();
+    row.insertCell(0).innerText=d.Nombre;
+    row.insertCell(1).innerText=d.Tipo;
+    row.insertCell(2).innerHTML=`<button onclick="abrirDocumento('${d.Link}','${d.DocumentoID}')">Abrir</button>`;
+    row.insertCell(3).innerText=d.Visitas || 0;
+  });
 }
 
-// Cerrar sesión
-function logout() {
-    localStorage.removeItem('usuario');
-    window.location.href = "index.html";
+// Abrir documento y contar visita
+async function abrirDocumento(link, id){
+  window.open(link,'_blank');
+  await fetch('https://script.google.com/macros/s/.../exec',{
+    method:'POST',
+    body: JSON.stringify({accion:'contarVisita', sheet:'Documentos', DocumentoID:id})
+  });
+  cargarDocumentos();
 }
 
-// Cargar documentos asignados al usuario
-async function cargarDocumentos() {
-    try {
-        const res = await fetch(`https://script.google.com/macros/s/.../exec?sheet=Documentos&usuario=${usuario.UsuarioID}`);
-        const data = await res.json();
-        const table = document.getElementById('docsTable');
-        data.forEach(d => {
-            const row = table.insertRow();
-            row.insertCell(0).innerText = d.Nombre;
-            row.insertCell(1).innerText = d.Tipo;
-            row.insertCell(2).innerHTML = `<a href="${d.Link}" target="_blank">Abrir</a>`;
-            row.insertCell(3).innerText = d.Visitas || 0;
-        });
-    } catch(err) { console.error(err); }
-}
-
-// Cargar comunicados
-async function cargarComunicados() {
-    try {
-        const res = await fetch(`https://script.google.com/macros/s/.../exec?sheet=Comunicados`);
-        const data = await res.json();
-        const table = document.getElementById('comsTable');
-        data.forEach(c => {
-            const row = table.insertRow();
-            row.insertCell(0).innerText = c.Nombre;
-            row.insertCell(1).innerText = c.Tipo;
-            row.insertCell(2).innerHTML = `<a href="${c.Link}" target="_blank">Abrir</a>`;
-        });
-    } catch(err) { console.error(err); }
+// Cargar Comunicados
+async function cargarComunicados(){
+  const res = await fetch(`https://script.google.com/macros/s/.../exec?sheet=Comunicados`);
+  const data = await res.json();
+  const table = document.getElementById('comsTable');
+  table.innerHTML='<tr><th>Nombre</th><th>Tipo</th><th>Link</th></tr>';
+  data.forEach(c=>{
+    const row = table.insertRow();
+    row.insertCell(0).innerText=c.Nombre;
+    row.insertCell(1).innerText=c.Tipo;
+    row.insertCell(2).innerHTML=`<a href="${c.Link}" target="_blank">Abrir</a>`;
+  });
 }
 
 cargarDocumentos();
 cargarComunicados();
 </script>
-
 </body>
 </html>
+
 
