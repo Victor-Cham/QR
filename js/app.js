@@ -1,48 +1,31 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbzQoAgJUNnoHzJkbflgQRdkbiDrZHnruH1DyL0D3vFOWsg_GZXS_JNcLKenHPn3c0Rh4w/exec"; // reemplaza con la URL de tu Apps Script Web App
+const API_URL = "https://script.google.com/macros/s/AKfycbzual47SlXlozqzIsnJsBVBUg39OCKKDHyaDJMajV_YGUOi5cjKltZWkrmbC4-k4wn4sg/exec";
 
+// LOGIN REAL → Llama a action=login
 async function login(usuario, contrasena) {
   try {
-    // Llamada a la Web App para obtener la lista de personas
-    const response = await fetch(`${API_URL}?action=getPersonas`);
-    const personas = await response.json();
+    const response = await fetch(`${API_URL}?action=login&usuario=${usuario}&contrasena=${contrasena}`);
+    const data = await response.json();
 
-    // Buscar usuario en la hoja
-    const user = personas.find(
-      p => (p.DNI === usuario || p.Email === usuario) && p.DOI === contrasena
-    );
+    console.log("Respuesta del servidor:", data);
 
-    if (user) {
-      // Redirigir según TipoUsuario
-      switch(user.TipoUsuario) {
-        case 'SuperAdmin':
-          window.location.href = 'superadmin.html';
-          break;
-        case 'Admin':
-          window.location.href = 'admin.html';
-          break;
-        default:
-          window.location.href = 'usuario.html';
-      }
+    if (!data.success) {
+      alert("Usuario o contraseña incorrecta");
+      return;
+    }
+
+    const tipo = data.usuario.TipoUsuario;
+
+    if (tipo === "SuperAdmin") {
+      window.location.href = "superadmin.html";
+    } else if (tipo === "Admin") {
+      window.location.href = "admin.html";
     } else {
-      alert('Usuario o contraseña incorrecta');
+      window.location.href = "usuario.html";
     }
 
   } catch (error) {
-    console.error('Error al conectar con la Web App:', error);
-    alert('No se pudo conectar con el servidor. Intente más tarde.');
+    console.error("Error en login:", error);
+    alert("No se pudo conectar con el servidor.");
   }
 }
-
-// Captura del formulario de login
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('loginForm');
-  if(form) {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const usuario = document.getElementById('usuario').value.trim();
-      const contrasena = document.getElementById('contrasena').value.trim();
-      login(usuario, contrasena);
-    });
-  }
-});
 
