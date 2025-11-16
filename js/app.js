@@ -2,29 +2,32 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzual47SlXlozqzIsnJsBVB
 
 async function login(usuario, contrasena) {
   try {
-    // Llamada a la API para verificar credenciales
     const response = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`);
     const result = await response.json();
 
-    // Si el login falla, muestra el mensaje
     if (!result.success) {
-      alert(result.message || "Error en el login");
+      alert(result.message || "Usuario o contraseña incorrecta");
       return;
     }
 
-    // Guardar los datos del usuario en localStorage para futuras validaciones
-    localStorage.setItem('usuario', JSON.stringify(result.usuario));
+    // Normalizamos el TipoUsuario para evitar errores de espacio o mayúsculas
+    const tipo = result.usuario.TipoUsuario.trim().toLowerCase();
 
-    // Redirigir según el tipo de usuario
-    switch(result.usuario.TipoUsuario) {
-      case "Super Admin":  // Asegúrate de que el tipo usuario tenga un espacio
+    switch(tipo) {
+      case "superadmin":
+        localStorage.setItem('usuario', JSON.stringify(result.usuario));
         window.location.href = "superadmin.html";
         break;
-      case "Admin":
+      case "admin":
+        localStorage.setItem('usuario', JSON.stringify(result.usuario));
         window.location.href = "admin.html";
         break;
-      default:
+      case "usuario":
+        localStorage.setItem('usuario', JSON.stringify(result.usuario));
         window.location.href = "usuario.html";
+        break;
+      default:
+        alert("Tipo de usuario no válido");
     }
 
   } catch (error) {
@@ -33,7 +36,7 @@ async function login(usuario, contrasena) {
   }
 }
 
-// Captura del formulario y envío del login
+// Captura del formulario
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('loginForm');
   if(form) {
