@@ -84,7 +84,7 @@ main { padding:20px; display:flex; flex-wrap: wrap; gap:20px; }
 <script>
 // Sesión
 const usuario = JSON.parse(localStorage.getItem('usuario'));
-if(!usuario || usuario.TipoUsuario!=="Super Admin"){
+if(!usuario || usuario.TipoUsuario!=="SuperAdmin"){
   alert("Acceso denegado");
   window.location.href="index.html";
 }
