@@ -1,91 +1,75 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Usuario - Dashboard</title>
-<link rel="stylesheet" href="css/styles.css">
-<style>
-body{font-family:'Segoe UI',sans-serif;margin:0;background:#f4f6f8;}
-header{background:#4e54c8;color:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;}
-header h1{font-size:20px;}
-header button{padding:8px 12px;border:none;border-radius:5px;cursor:pointer;background:#fff;color:#4e54c8;font-weight:bold;}
-main{padding:20px;display:flex;flex-wrap:wrap;gap:20px;}
-.card{background:#fff;padding:20px;border-radius:10px;box-shadow:0px 5px 15px rgba(0,0,0,0.1);flex:1 1 300px;min-width:250px;}
-.card h2{font-size:18px;margin-bottom:10px;color:#333;}
-.card table{width:100%;border-collapse:collapse;}
-.card table th, .card table td{padding:8px;text-align:left;border-bottom:1px solid #ccc;}
-button{padding:5px 8px;border:none;border-radius:5px;background:#4e54c8;color:#fff;cursor:pointer;font-weight:bold;}
-button:hover{opacity:0.9;}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/styles.css">
+  <title>Panel Usuario</title>
+  <style>
+    body { font-family: Arial; background: #f8f9fa; margin: 0; }
+    header { background: #6c757d; color: white; padding: 1rem; text-align: center; }
+    main { padding: 1rem; }
+    .module-buttons { display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem; }
+    .module-buttons button {
+      padding: 1rem 2rem;
+      border: none; background: #17a2b8; color: white;
+      border-radius: 6px; cursor: pointer; transition: .3s;
+    }
+    .module-buttons button:hover { background: #117a8b; }
+  </style>
 </head>
+
 <body>
 <header>
-  <h1>Usuario Dashboard</h1>
-  <button onclick="logout()">Cerrar sesión</button>
+  <h1>Bienvenido Usuario</h1>
 </header>
+
 <main>
-  <div class="card">
-    <h2>Documentos Asignados</h2>
-    <table id="docsTable">
-      <tr><th>Nombre</th><th>Tipo</th><th>Link</th><th>Visitas</th></tr>
-    </table>
+  <div class="module-buttons">
+    <button onclick="cargarModulo('Comunicados')">Ver Comunicados</button>
+    <button onclick="cargarModulo('Documentos')">Ver Documentos</button>
+    <button onclick="cargarModulo('Anexos')">Ver Anexos</button>
   </div>
-  <div class="card">
-    <h2>Comunicados</h2>
-    <table id="comsTable">
-      <tr><th>Nombre</th><th>Tipo</th><th>Link</th></tr>
-    </table>
+
+  <div id="contenido">
+    <p>Seleccione una opción para visualizar información.</p>
   </div>
 </main>
 
+<script src="js/app.js"></script>
 <script>
-const usuario = JSON.parse(localStorage.getItem('usuario'));
-if(!usuario){alert('Acceso denegado');window.location.href='index.html';}
-function logout(){localStorage.removeItem('usuario');window.location.href='index.html';}
+  async function cargarModulo(modulo) {
+    const contenido = document.getElementById("contenido");
+    contenido.innerHTML = `<p>Cargando ${modulo}...</p>`;
 
-// Cargar Documentos asignados
-async function cargarDocumentos(){
-  const res = await fetch(`https://script.google.com/macros/s/.../exec?sheet=Documentos&usuario=${usuario.UsuarioID}`);
-  const data = await res.json();
-  const table = document.getElementById('docsTable');
-  table.innerHTML='<tr><th>Nombre</th><th>Tipo</th><th>Link</th><th>Visitas</th></tr>';
-  data.forEach(d=>{
-    const row = table.insertRow();
-    row.insertCell(0).innerText=d.Nombre;
-    row.insertCell(1).innerText=d.Tipo;
-    row.insertCell(2).innerHTML=`<button onclick="abrirDocumento('${d.Link}','${d.DocumentoID}')">Abrir</button>`;
-    row.insertCell(3).innerText=d.Visitas || 0;
-  });
-}
+    try {
+      const response = await fetch(`${API_URL}?action=get${modulo}`);
+      const datos = await response.json();
 
-// Abrir documento y contar visita
-async function abrirDocumento(link, id){
-  window.open(link,'_blank');
-  await fetch('https://script.google.com/macros/s/.../exec',{
-    method:'POST',
-    body: JSON.stringify({accion:'contarVisita', sheet:'Documentos', DocumentoID:id})
-  });
-  cargarDocumentos();
-}
+      if (datos.length === 0) {
+        contenido.innerHTML = `<p>No hay datos.</p>`;
+        return;
+      }
 
-// Cargar Comunicados
-async function cargarComunicados(){
-  const res = await fetch(`https://script.google.com/macros/s/.../exec?sheet=Comunicados`);
-  const data = await res.json();
-  const table = document.getElementById('comsTable');
-  table.innerHTML='<tr><th>Nombre</th><th>Tipo</th><th>Link</th></tr>';
-  data.forEach(c=>{
-    const row = table.insertRow();
-    row.insertCell(0).innerText=c.Nombre;
-    row.insertCell(1).innerText=c.Tipo;
-    row.insertCell(2).innerHTML=`<a href="${c.Link}" target="_blank">Abrir</a>`;
-  });
-}
+      let html = `<h3>${modulo}</h3><table><tr>`;
+      for (let key in datos[0]) html += `<th>${key}</th>`;
+      html += "</tr>";
 
-cargarDocumentos();
-cargarComunicados();
+      datos.forEach(row => {
+        html += "<tr>";
+        for (let key in row) html += `<td>${row[key]}</td>`;
+        html += "</tr>";
+      });
+
+      html += "</table>";
+      contenido.innerHTML = html;
+
+    } catch (e) {
+      contenido.innerHTML = `<p>Error al cargar la información.</p>`;
+    }
+  }
 </script>
+
 </body>
 </html>
 
