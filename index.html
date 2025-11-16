@@ -4,78 +4,132 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="css/styles.css">
-  <title>Login Sistema Documentos</title>
+  <title>Dashboard SuperAdmin</title>
   <style>
     /* Estilos básicos, puedes moverlos a css/styles.css */
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      margin: 0;
+      padding: 0;
     }
-    .login-container {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-    }
-    .login-container h2 {
-      margin-bottom: 1.5rem;
-    }
-    .login-container input {
-      width: 100%;
-      padding: 0.75rem;
-      margin: 0.5rem 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .login-container button {
-      width: 100%;
-      padding: 0.75rem;
+
+    header {
       background-color: #007bff;
       color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    .dashboard-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .dashboard-buttons button {
+      padding: 1rem 2rem;
       font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #17a2b8;
+      color: white;
+      transition: 0.3s;
     }
-    .login-container button:hover {
-      background-color: #0056b3;
+
+    .dashboard-buttons button:hover {
+      background-color: #117a8b;
     }
-    @media (max-width: 500px) {
-      .login-container {
-        padding: 1rem;
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    table th, table td {
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    table th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    @media (max-width: 600px) {
+      .dashboard-buttons {
+        flex-direction: column;
       }
     }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <h2>Iniciar Sesión</h2>
-    <form id="loginForm">
-      <input type="text" id="usuario" placeholder="DNI o Email" required>
-      <input type="password" id="contrasena" placeholder="Contraseña" required>
-      <button type="submit">Ingresar</button>
-    </form>
-  </div>
+  <header>
+    <h1>Bienvenido SuperAdmin</h1>
+  </header>
 
-  <!-- JS que maneja el login -->
+  <main>
+    <div class="dashboard-buttons">
+      <button onclick="cargarModulo('Personas')">Personas</button>
+      <button onclick="cargarModulo('Comunicados')">Comunicados</button>
+      <button onclick="cargarModulo('Documentos')">Documentos</button>
+    </div>
+
+    <div id="contenido">
+      <p>Seleccione un módulo para ver la información.</p>
+    </div>
+  </main>
+
   <script src="js/app.js"></script>
-
-  <!-- Captura del submit -->
   <script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const usuario = document.getElementById('usuario').value.trim();
-      const contrasena = document.getElementById('contrasena').value.trim();
-      login(usuario, contrasena); // Función definida en js/app.js
-    });
+    async function cargarModulo(modulo) {
+      const contenido = document.getElementById('contenido');
+      contenido.innerHTML = `<p>Cargando ${modulo}...</p>`;
+
+      try {
+        // Llamada a la Web App para traer datos según módulo
+        const response = await fetch(`${API_URL}?action=get${modulo}`);
+        const datos = await response.json();
+
+        if (datos.length === 0) {
+          contenido.innerHTML = `<p>No hay datos disponibles en ${modulo}.</p>`;
+          return;
+        }
+
+        // Crear tabla dinámica
+        let html = '<table><tr>';
+        for (let key in datos[0]) {
+          html += `<th>${key}</th>`;
+        }
+        html += '</tr>';
+
+        datos.forEach(item => {
+          html += '<tr>';
+          for (let key in item) {
+            html += `<td>${item[key]}</td>`;
+          }
+          html += '</tr>';
+        });
+        html += '</table>';
+
+        contenido.innerHTML = html;
+
+      } catch (error) {
+        console.error(error);
+        contenido.innerHTML = `<p>Error al cargar el módulo ${modulo}.</p>`;
+      }
+    }
   </script>
 </body>
 </html>
+
 
