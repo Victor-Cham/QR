@@ -12,7 +12,7 @@ async function login(usuario, contrasena) {
 
     // Redirigir según TipoUsuario
     switch(result.usuario.TipoUsuario) {
-      case "SuperAdmin":
+      case "Super Admin":
         window.location.href = "superadmin.html";
         break;
       case "Admin":
