@@ -7,43 +7,36 @@
   <link rel="stylesheet" href="./css/styles.css">
   <style>
     body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f6f8; }
-
-    /* Barra lateral */
     .sidebar { width: 220px; background: #17a2b8; color: white; display: flex; flex-direction: column; }
     .sidebar h2 { text-align: center; margin: 20px 0; font-size: 1.4rem; }
     .sidebar button { background: transparent; border: none; color: white; padding: 15px 20px; text-align: left; cursor: pointer; font-size: 1rem; width: 100%; }
     .sidebar button:hover, .sidebar button.active { background: #138496; }
 
-    /* Contenido principal */
     .main { flex: 1; display: flex; flex-direction: column; }
     header { background: #ffffff; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     header h1 { margin: 0; font-size: 1.5rem; color: #333; }
     header .user-info { display: flex; align-items: center; gap: 10px; font-size: 1rem; color: #333; }
     header .user-info button { background: #ff4b5c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; }
 
-    /* Área de contenido de módulo */
     .content { padding: 20px; overflow-y: auto; flex: 1; }
     .content h2 { color: #333; margin-top: 0; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     th { background: #e9ecef; }
-
     button.crud-btn { padding: 5px 10px; margin-right: 5px; cursor: pointer; border-radius: 3px; border: none; color: white; }
     button.edit { background: #ffc107; }
     button.delete { background: #dc3545; }
 
-    input.search-input { padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 10px; width: 250px; }
+    .add-form { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .add-form label { display: block; margin: 10px 0 5px; }
+    .add-form input[type="text"], .add-form select, .add-form input[type="file"] { width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+    .add-form button { margin-top: 10px; background: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
 
-    /* Formulario estático */
-    #formAgregarContainer { margin-bottom: 20px; background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    #formAgregarContainer input { padding: 8px; margin: 5px 0; width: 100%; border-radius: 5px; border: 1px solid #ccc; }
-    #formAgregarContainer button { margin-top: 10px; }
+    .search-input { padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 10px; width: 250px; }
   </style>
 </head>
 <body>
-
-  <!-- Barra lateral -->
   <div class="sidebar">
     <h2>Admin Panel</h2>
     <button class="active" onclick="loadModule('comunicados')">Comunicados</button>
@@ -51,7 +44,6 @@
     <button onclick="loadModule('anexos')">Anexos</button>
   </div>
 
-  <!-- Contenido principal -->
   <div class="main">
     <header>
       <h1>Panel de Administración</h1>
@@ -62,66 +54,67 @@
     </header>
 
     <div class="content">
+      <!-- Formulario estático para agregar registro -->
+      <div class="add-form">
+        <h3>Agregar nuevo registro</h3>
+        <form id="addForm">
+          <label for="nombre">Nombre:</label>
+          <input type="text" id="nombre" name="nombre" required>
 
-      <!-- Buscador -->
-      <div id="moduleHeader">
-        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre..." oninput="filterTable()">
-      </div>
+          <label for="tipoDocumento">Tipo:</label>
+          <input type="text" id="tipoDocumento" name="tipoDocumento" required>
 
-      <!-- Formulario estático para agregar registros -->
-      <div id="formAgregarContainer">
-        <h3>Agregar Registro</h3>
-        <form id="formAgregar">
-          <input type="text" name="nombre" placeholder="Nombre" required>
-          <input type="text" name="tipoDocumento" placeholder="Tipo" required>
-          <input type="text" name="link" placeholder="Link" required>
-          <button type="submit" style="background:#28a745; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer;">Guardar</button>
+          <label for="archivo">Archivo (Word, PDF, Imagen):</label>
+          <input type="file" id="archivo" name="archivo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+
+          <button type="submit">Agregar</button>
         </form>
       </div>
 
-      <!-- Contenedor dinámico para tablas -->
+      <!-- Buscador -->
+      <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre..." oninput="filterTable()">
+
+      <!-- Contenedor para la tabla -->
       <div id="moduleContainer"></div>
     </div>
   </div>
 
   <script src="./js/app.js"></script>
   <script>
-    // Inicializar formulario estático
-    document.getElementById('formAgregar').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const nombre = form.nombre.value.trim();
-      const tipoDocumento = form.tipoDocumento.value.trim();
-      const link = form.link.value.trim();
+    let currentModule = 'comunicados';
+    let allItems = [];
 
-      if(nombre && tipoDocumento && link) {
-        try {
-          await createItem(currentModule, nombre, tipoDocumento, link);
-          alert("Registro agregado correctamente");
-          form.reset();
-          await loadModule(currentModule);
-        } catch(err) {
-          alert("Error al agregar registro: " + err.message);
-        }
-      }
-    });
-
-    // Mostrar nombre del usuario y cargar módulo inicial
     document.addEventListener('DOMContentLoaded', async () => {
       let user = null;
       try {
         user = JSON.parse(localStorage.getItem('usuario'));
-      } catch(e) {
-        localStorage.removeItem('usuario');
-      }
+      } catch(e) { localStorage.removeItem('usuario'); }
 
-      if(!user) {
-        window.location.href = "index.html";
-        return;
-      }
+      if(!user) { window.location.href = "index.html"; return; }
 
       document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
+
       await loadModule(currentModule);
+    });
+
+    // Manejar envío de formulario
+    document.getElementById("addForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById("nombre").value.trim();
+      const tipoDocumento = document.getElementById("tipoDocumento").value.trim();
+      const archivoInput = document.getElementById("archivo");
+      if (!archivoInput.files.length) return alert("Debe seleccionar un archivo");
+
+      const archivo = archivoInput.files[0];
+
+      try {
+        await uploadItem(currentModule, nombre, tipoDocumento, archivo);
+        alert("Registro agregado correctamente");
+        e.target.reset();
+        await loadModule(currentModule);
+      } catch(err) {
+        alert("Error al agregar registro: " + err.message);
+      }
     });
   </script>
 </body>
