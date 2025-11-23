@@ -1,245 +1,156 @@
 /************************************************************
- * CONFIGURACIÓN GENERAL
+ * FRONTEND APP.JS
  ************************************************************/
-const API_URL = "https://script.google.com/macros/s/AKfycbzt77BLIMnAJYsrsAKAF2zm5A6HDorPXV4c7FcXm97PpbYCMZX2xT29LTZojfhX2tU7VA/exec";
+
+const API_URL = "TU_URL_DE_WEB_APP"; // Reemplaza con la URL de tu Web App de Google Apps Script
 
 let currentModule = "comunicados";
 
-/************************************************************
- * LOGIN
- ************************************************************/
-async function login(usuario, contrasena) {
-  try {
-    if (!usuario || !contrasena) {
-      alert("Debe ingresar usuario y contraseña");
-      return;
-    }
-
-    const url = `${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`;
-
-    const response = await fetch(url);
-    const result = await response.json();
-
-    if (!result.success) {
-      alert(result.message || "Usuario o contraseña incorrectos");
-      return;
-    }
-
-    localStorage.setItem("usuario", JSON.stringify(result.usuario));
-
-    const tipo = (result.usuario.TipoUsuario || "").trim().toLowerCase();
-
-    switch (tipo) {
-      case "superadmin": window.location.href = "superadmin.html"; break;
-      case "admin": window.location.href = "admin.html"; break;
-      case "usuario": window.location.href = "usuario.html"; break;
-      default:
-        alert("Tipo de usuario no válido");
-        localStorage.removeItem("usuario");
-    }
-
-  } catch (error) {
-    console.error("Error en login:", error);
-    alert("No se pudo conectar con el servidor.");
+/********** LOGIN / SESIÓN **********/
+document.addEventListener("DOMContentLoaded", () => {
+  const userStr = localStorage.getItem("usuario");
+  if (!userStr) {
+    window.location.href = "index.html";
+    return;
   }
-}
 
-/************************************************************
- * LOGOUT
- ************************************************************/
+  const user = JSON.parse(userStr);
+  document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || "Administrador"}`;
+  loadModule(currentModule);
+});
+
 function logout() {
   localStorage.removeItem("usuario");
   window.location.href = "index.html";
 }
 
-/************************************************************
- * OBTENER ITEMS
- ************************************************************/
-async function getItems(tipo) {
-  try {
-    const response = await fetch(`${API_URL}?action=getItems&tipo=${tipo}`);
-    const data = await response.json();
+/********** FUNCIONES CRUD **********/
+async function fetchGET(params) {
+  const url = new URL(API_URL);
+  Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+  const res = await fetch(url);
+  return res.json();
+}
 
-    if (!data.success) {
-      console.error("Error del servidor:", data);
-      return [];
+async function fetchPOST(data) {
+  const formData = new FormData();
+  Object.keys(data).forEach(key => formData.append(key, data[key]));
+  const res = await fetch(API_URL, { method: "POST", body: formData });
+  return res.json();
+}
+
+/********** LOGIN FORM HANDLER **********/
+async function handleLogin(usuario, contrasena) {
+  const res = await fetchGET({ action: "login", usuario, contrasena });
+  if (res.success) {
+    localStorage.setItem("usuario", JSON.stringify(res.usuario));
+    switch (res.usuario.TipoUsuario.toLowerCase()) {
+      case "superadmin": window.location.href = "superadmin.html"; break;
+      case "admin": window.location.href = "admin.html"; break;
+      case "usuario": window.location.href = "usuario.html"; break;
+    }
+  } else {
+    throw new Error(res.message);
+  }
+}
+
+/********** CARGA DE MÓDULOS **********/
+async function loadModule(mod) {
+  currentModule = mod;
+  const container = document.getElementById("moduleContainer");
+  container.innerHTML = "<p>Cargando...</p>";
+  
+  try {
+    const res = await fetchGET({ action: "getItems", tipo: mod });
+    if (!res.success) throw new Error(res.message);
+
+    const items = res.items;
+    if (!items.length) {
+      container.innerHTML = "<p>No hay registros.</p>";
+      return;
     }
 
-    return data.items || [];
-
-  } catch (error) {
-    console.error("Error al obtener items:", error);
-    return [];
-  }
-}
-
-/************************************************************
- * SUBIR ARCHIVO + CREAR REGISTRO
- ************************************************************/
-async function uploadItem(tipo, nombre, tipoDocumento, archivo) {
-  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}").DNI || "";
-
-  const formData = new FormData();
-  formData.append("action", "uploadItem");
-  formData.append("tipo", tipo);
-  formData.append("nombre", nombre);
-  formData.append("tipoDocumento", tipoDocumento);
-  formData.append("usuario", usuario);
-  formData.append("archivo", archivo);
-  formData.append("nombreArchivo", archivo.name);
-  formData.append("mimeType", archivo.type);
-
-  const response = await fetch(API_URL, { method: "POST", body: formData });
-  const data = await response.json();
-
-  if (!data.success) throw new Error(data.message || "Error al subir archivo");
-
-  alert("Registro creado correctamente");
-}
-
-/************************************************************
- * ACTUALIZAR REGISTRO
- ************************************************************/
-async function updateItem(tipo, id, nombre, tipoDocumento) {
-  const body = new URLSearchParams({
-    action: "updateItem",
-    tipo, id, nombre, tipoDocumento
-  });
-
-  const response = await fetch(API_URL, { method: "POST", body });
-  const data = await response.json();
-
-  if (!data.success) throw new Error(data.message);
-}
-
-/************************************************************
- * ELIMINAR REGISTRO
- ************************************************************/
-async function deleteItem(tipo, id) {
-  const body = new URLSearchParams({ action: "deleteItem", tipo, id });
-
-  const response = await fetch(API_URL, { method: "POST", body });
-  const data = await response.json();
-
-  if (!data.success) throw new Error(data.message);
-}
-
-/************************************************************
- * RENDER TABLA
- ************************************************************/
-function renderTable(tipo, items) {
-  const container = document.getElementById("moduleContainer");
-  if (!container) return;
-
-  if (!items.length) {
-    container.innerHTML = "<p>No hay registros.</p>";
-    return;
-  }
-
-  let html = `
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Tipo</th>
-          <th>Archivo</th>
-          <th>QR</th>
-          <th>Usuario</th>
-          <th>Fecha</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
+    let tableHTML = `<table>
+      <thead><tr>${Object.keys(items[0]).map(k => `<th>${k}</th>`).join("")}<th>Acciones</th></tr></thead>
       <tbody>
-  `;
+      ${items.map(item => `
+        <tr>
+          ${Object.keys(item).map(k => `<td>${item[k]}</td>`).join("")}
+          <td>
+            <button class="crud-btn edit" onclick='editItem("${currentModule}", "${item.ID}")'>Editar</button>
+            <button class="crud-btn delete" onclick='deleteItem("${currentModule}", "${item.ID}")'>Eliminar</button>
+          </td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
 
-  items.forEach(item => {
-    let idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
+    container.innerHTML = tableHTML;
 
-    html += `
-      <tr>
-        <td>${item[idKey]}</td>
-        <td>${item.Nombre}</td>
-        <td>${item.Tipo}</td>
-        <td><a href="${item.Link}" target="_blank">Ver Archivo</a></td>
-        <td><img src="${item["QR Online"]}" width="50" onclick="copyToClipboard('${item["QR Online"]}')"></td>
-        <td>${item["Usuario Crea"]}</td>
-        <td>${item["Fecha Creado"]}</td>
-        <td>
-          <button class="crud-btn edit" onclick="editItemHandler('${tipo}', '${item[idKey]}')">Editar</button>
-          <button class="crud-btn delete" onclick="deleteItemHandler('${tipo}', '${item[idKey]}')">Eliminar</button>
-        </td>
-      </tr>
-    `;
-  });
-
-  html += "</tbody></table>";
-  container.innerHTML = html;
+  } catch(err) {
+    container.innerHTML = `<p style="color:red;">Error cargando registros: ${err.message}</p>`;
+  }
 }
 
-/************************************************************
- * FILTRO DE BÚSQUEDA
- ************************************************************/
+/********** AGREGAR REGISTRO **********/
+async function uploadItem(mod, nombre, tipoDocumento, archivo) {
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onload = async function(e) {
+      const base64 = btoa(e.target.result);
+      const usuario = JSON.parse(localStorage.getItem("usuario")).Nombre || "Anonimo";
+      const data = {
+        action: "uploadItem",
+        tipo: mod,
+        nombre,
+        tipoDocumento,
+        archivo: base64,
+        nombreArchivo: archivo.name,
+        mimeType: archivo.type,
+        usuario
+      };
+
+      try {
+        const res = await fetchPOST(data);
+        if (!res.success) reject(new Error(res.message));
+        else resolve(res);
+      } catch(err) { reject(err); }
+    };
+
+    reader.readAsBinaryString(archivo);
+  });
+}
+
+/********** EDITAR / ELIMINAR **********/
+async function editItem(mod, id) {
+  const nuevoNombre = prompt("Ingrese el nuevo nombre:");
+  if (!nuevoNombre) return;
+  const nuevoTipo = prompt("Ingrese el nuevo tipo:");
+  if (!nuevoTipo) return;
+
+  try {
+    const res = await fetchPOST({ action: "updateItem", tipo: mod, id, nombre: nuevoNombre, tipoDocumento: nuevoTipo });
+    if (!res.success) throw new Error(res.message);
+    alert("Registro actualizado");
+    loadModule(mod);
+  } catch(err) { alert("Error: " + err.message); }
+}
+
+async function deleteItem(mod, id) {
+  if (!confirm("¿Desea eliminar este registro?")) return;
+  try {
+    const res = await fetchPOST({ action: "deleteItem", tipo: mod, id });
+    if (!res.success) throw new Error(res.message);
+    alert("Registro eliminado");
+    loadModule(mod);
+  } catch(err) { alert("Error: " + err.message); }
+}
+
+/********** FILTRADO DE TABLA **********/
 function filterTable() {
-  const input = document.getElementById("searchInput");
-  const rows = document.querySelectorAll("#moduleContainer table tbody tr");
-
-  const query = input.value.toLowerCase();
-
+  const filter = document.getElementById("searchInput").value.toLowerCase();
+  const rows = document.querySelectorAll("#moduleContainer tbody tr");
   rows.forEach(row => {
-    const nombre = row.cells[1]?.innerText.toLowerCase();
-    row.style.display = nombre.includes(query) ? "" : "none";
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(filter) ? "" : "none";
   });
 }
-
-/************************************************************
- * EDITAR
- ************************************************************/
-async function editItemHandler(tipo, id) {
-  const nombre = prompt("Nuevo nombre:");
-  const tipoDocumento = prompt("Nuevo tipo:");
-
-  if (!nombre || !tipoDocumento) return;
-
-  await updateItem(tipo, id, nombre, tipoDocumento);
-  loadModule(tipo);
-}
-
-/************************************************************
- * ELIMINAR
- ************************************************************/
-async function deleteItemHandler(tipo, id) {
-  if (!confirm("¿Eliminar este registro?")) return;
-
-  await deleteItem(tipo, id);
-  loadModule(tipo);
-}
-
-/************************************************************
- * COPIAR QR
- ************************************************************/
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text);
-  alert("Enlace QR copiado");
-}
-
-/************************************************************
- * CARGAR MÓDULO
- ************************************************************/
-async function loadModule(module) {
-  currentModule = module;
-  const items = await getItems(module);
-  renderTable(module, items);
-}
-
-/************************************************************
- * EXPORTAR A GLOBAL
- ************************************************************/
-window.login = login;
-window.logout = logout;
-window.uploadItem = uploadItem;
-window.filterTable = filterTable;
-window.loadModule = loadModule;
-window.editItemHandler = editItemHandler;
-window.deleteItemHandler = deleteItemHandler;
-window.copyToClipboard = copyToClipboard;
