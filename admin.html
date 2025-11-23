@@ -2,73 +2,136 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Gestión de Contenidos</title>
   <link rel="stylesheet" href="css/styles.css">
-  <title>Panel Administrador</title>
-  <style>
-    body { font-family: Arial; background: #f4f4f4; margin: 0; }
-    header { background: #28a745; color: white; padding: 1rem; text-align: center; }
-    main { padding: 1rem; }
-    .module-buttons { display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem; }
-    .module-buttons button {
-      padding: 1rem 2rem;
-      border: none; background: #17a2b8; color: white;
-      border-radius: 6px; cursor: pointer; transition: .3s;
-    }
-    .module-buttons button:hover { background: #117a8b; }
-  </style>
 </head>
-
 <body>
-<header>
-  <h1>Panel Administrador</h1>
-</header>
+  <h1>Panel de Administración</h1>
+  <button onclick="logout()">Cerrar sesión</button>
 
-<main>
-  <div class="module-buttons">
-    <button onclick="cargarModulo('Comunicados')">Comunicados</button>
-    <button onclick="cargarModulo('Documentos')">Documentos</button>
-    <button onclick="cargarModulo('Anexos')">Anexos</button>
-  </div>
+  <h2>Comunicados</h2>
+  <button onclick="nuevoItem('comunicados')">Agregar Comunicado</button>
+  <table id="tablaComunicados" border="1">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Link</th>
+        <th>QR Online</th>
+        <th>Usuario Crea</th>
+        <th>Fecha Creado</th>
+        <th>Visitas</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-  <div id="contenido">
-    <p>Seleccione un módulo para gestionar.</p>
-  </div>
-</main>
+  <h2>Documentos</h2>
+  <button onclick="nuevoItem('documentos')">Agregar Documento</button>
+  <table id="tablaDocumentos" border="1">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Link</th>
+        <th>QR Online</th>
+        <th>Usuario Crea</th>
+        <th>Fecha Creado</th>
+        <th>Visitas</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<script src="js/app.js"></script>
-<script>
-  async function cargarModulo(modulo) {
-    const contenido = document.getElementById("contenido");
-    contenido.innerHTML = `<p>Cargando ${modulo}...</p>`;
+  <h2>Anexos</h2>
+  <button onclick="nuevoItem('anexos')">Agregar Anexo</button>
+  <table id="tablaAnexos" border="1">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Link</th>
+        <th>QR Online</th>
+        <th>Usuario Crea</th>
+        <th>Fecha Creado</th>
+        <th>Visitas</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-    try {
-      const response = await fetch(`${API_URL}?action=get${modulo}`);
-      const datos = await response.json();
-
-      if (datos.length === 0) {
-        contenido.innerHTML = `<p>No hay datos disponibles.</p>`;
-        return;
-      }
-
-      let html = `<h3>${modulo}</h3><table><tr>`;
-      for (let key in datos[0]) html += `<th>${key}</th>`;
-      html += "</tr>";
-
-      datos.forEach(row => {
-        html += "<tr>";
-        for (let key in row) html += `<td>${row[key]}</td>`;
-        html += "</tr>";
-      });
-
-      html += "</table>";
-      contenido.innerHTML = html;
-
-    } catch (e) {
-      contenido.innerHTML = `<p>Error al cargar datos.</p>`;
+  <script src="js/app.js"></script>
+  <script>
+    // Logout
+    function logout() {
+      localStorage.removeItem('usuario');
+      window.location.href = "index.html";
     }
-  }
-</script>
 
+    // Cargar tablas
+    document.addEventListener('DOMContentLoaded', async () => {
+      await cargarTabla('comunicados', 'tablaComunicados');
+      await cargarTabla('documentos', 'tablaDocumentos');
+      await cargarTabla('anexos', 'tablaAnexos');
+    });
+
+    async function cargarTabla(tipo, tablaId) {
+      const items = await getItems(tipo);
+      const tbody = document.getElementById(tablaId).querySelector('tbody');
+      tbody.innerHTML = "";
+      items.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item[`${tipo.substring(0,3).toUpperCase()}ID`]}</td>
+          <td>${item.Nombre}</td>
+          <td>${item.Tipo}</td>
+          <td><a href="${item.Link}" target="_blank">Ver</a></td>
+          <td><a href="${item['QR Online']}" target="_blank">QR</a></td>
+          <td>${item['Usuario Crea']}</td>
+          <td>${item['Fecha Creado']}</td>
+          <td>${item.VisitasTotales}</td>
+          <td>
+            <button onclick="editarItem('${tipo}','${item[`${tipo.substring(0,3).toUpperCase()}ID`]}')">Editar</button>
+            <button onclick="eliminarItem('${tipo}','${item[`${tipo.substring(0,3).toUpperCase()}ID`]}')">Eliminar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function nuevoItem(tipo) {
+      const nombre = prompt("Nombre:");
+      const tipoDoc = prompt("Tipo:");
+      const link = prompt("Link:");
+      if(nombre && tipoDoc && link) {
+        await createItem(tipo, nombre, tipoDoc, link);
+        await cargarTabla(tipo, `tabla${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+      }
+    }
+
+    async function editarItem(tipo, id) {
+      const nombre = prompt("Nombre nuevo:");
+      const tipoDoc = prompt("Tipo nuevo:");
+      const link = prompt("Link nuevo:");
+      if(nombre && tipoDoc && link) {
+        await updateItem(tipo, id, nombre, tipoDoc, link);
+        await cargarTabla(tipo, `tabla${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+      }
+    }
+
+    async function eliminarItem(tipo, id) {
+      if(confirm("¿Seguro que deseas eliminar este item?")) {
+        await deleteItem(tipo, id);
+        await cargarTabla(tipo, `tabla${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+      }
+    }
+  </script>
 </body>
 </html>
+
