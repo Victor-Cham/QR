@@ -2,24 +2,50 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SuperAdmin - Dashboard</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="./css/styles.css">
+
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f8; margin:0; }
+    header { background: #007bff; color: white; padding: 1rem; text-align: center; position: relative; }
+    header h1 { margin:0; }
+    header button { position: absolute; top: 1rem; right: 1rem; background: #dc3545; border: none; padding: 0.5rem 1rem; color: white; border-radius:6px; cursor:pointer;}
+    header button:hover { background:#c82333;}
+    main { padding:2rem; max-width: 800px; margin:auto; }
+    .stats { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-around; }
+    .card { flex:1 1 200px; background:white; padding:1rem; border-radius:8px; box-shadow:0 5px 15px rgba(0,0,0,0.1); text-align:center; }
+    .card h3 { margin:0.5rem 0; color:#007bff; font-size:1.5rem; }
+    .card p { margin:0; color:#333; font-size:1rem; }
+  </style>
 </head>
 <body>
-  <h1>Dashboard SuperAdmin</h1>
-  <button onclick="logout()">Cerrar sesión</button>
+  <header>
+    <h1>Dashboard SuperAdmin</h1>
+    <button onclick="logout()">Cerrar sesión</button>
+  </header>
+  <main>
+    <div class="stats">
+      <div class="card">
+        <p>Usuarios</p>
+        <h3 id="usuariosCount">0</h3>
+      </div>
+      <div class="card">
+        <p>Comunicados</p>
+        <h3 id="comunicadosCount">0</h3>
+      </div>
+      <div class="card">
+        <p>Documentos</p>
+        <h3 id="documentosCount">0</h3>
+      </div>
+      <div class="card">
+        <p>Anexos</p>
+        <h3 id="anexosCount">0</h3>
+      </div>
+    </div>
+  </main>
 
-  <div>
-    <h2>Estadísticas Generales</h2>
-    <ul>
-      <li id="usuariosCount">Usuarios: 0</li>
-      <li id="comunicadosCount">Comunicados: 0</li>
-      <li id="documentosCount">Documentos: 0</li>
-      <li id="anexosCount">Anexos: 0</li>
-    </ul>
-  </div>
-
-  <script src="js/app.js"></script>
+  <script src="./js/app.js"></script>
   <script>
     function logout() {
       localStorage.removeItem('usuario');
@@ -29,15 +55,16 @@
     document.addEventListener('DOMContentLoaded', async () => {
       try {
         const stats = await getStats();
-        document.getElementById('usuariosCount').textContent = `Usuarios: ${stats.usuarios}`;
-        document.getElementById('comunicadosCount').textContent = `Comunicados: ${stats.comunicados}`;
-        document.getElementById('documentosCount').textContent = `Documentos: ${stats.documentos}`;
-        document.getElementById('anexosCount').textContent = `Anexos: ${stats.anexos}`;
+        document.getElementById('usuariosCount').textContent = stats.usuarios;
+        document.getElementById('comunicadosCount').textContent = stats.comunicados;
+        document.getElementById('documentosCount').textContent = stats.documentos;
+        document.getElementById('anexosCount').textContent = stats.anexos;
       } catch (error) {
-        alert("Error al cargar estadísticas");
         console.error(error);
+        alert("Error al cargar estadísticas");
       }
     });
   </script>
 </body>
 </html>
+
