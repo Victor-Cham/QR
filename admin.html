@@ -1,250 +1,163 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel Admin</title>
-<link rel="stylesheet" href="./css/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Admin</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f6f8; }
+    /* Barra lateral */
+    .sidebar { width: 220px; background: #17a2b8; color: white; display: flex; flex-direction: column; }
+    .sidebar h2 { text-align: center; margin: 20px 0; font-size: 1.4rem; }
+    .sidebar button { background: transparent; border: none; color: white; padding: 15px 20px; text-align: left; cursor: pointer; font-size: 1rem; width: 100%; }
+    .sidebar button:hover, .sidebar button.active { background: #138496; }
 
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f4f6f8;
-    display: flex;
-    height: 100vh;
-  }
+    /* Contenido principal */
+    .main { flex: 1; display: flex; flex-direction: column; }
+    header { background: #ffffff; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    header h1 { margin: 0; font-size: 1.5rem; color: #333; }
+    header .user-info { display: flex; align-items: center; gap: 10px; font-size: 1rem; color: #333; }
+    header .user-info button { background: #ff4b5c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; }
 
-  /* Barra lateral */
-  nav.sidebar {
-    width: 200px;
-    background: #17a2b8;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    padding-top: 20px;
-  }
-
-  nav.sidebar button {
-    background: none;
-    border: none;
-    color: white;
-    padding: 15px;
-    text-align: left;
-    width: 100%;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-
-  nav.sidebar button:hover {
-    background: #138496;
-  }
-
-  /* Contenido principal */
-  main.content {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-  }
-
-  /* Módulos */
-  .module {
-    display: none;
-  }
-
-  .module.active {
-    display: block;
-  }
-
-  .module h2 {
-    margin-top: 0;
-    color: #333;
-  }
-
-  /* Sticky form */
-  .module form {
-    position: sticky;
-    top: 0;
-    background: #f8f9fa;
-    padding: 10px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    border-bottom: 1px solid #ccc;
-    z-index: 10;
-  }
-
-  .module form input[type="text"] {
-    padding: 5px 10px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-  }
-
-  .module form button {
-    background: #17a2b8;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .module form button:hover {
-    background: #138496;
-  }
-
-  /* Search input */
-  .module .search-container {
-    margin: 10px 0;
-  }
-
-  .module .search-container input {
-    padding: 5px 10px;
-    width: 250px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-  }
-
-  /* Table */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 2rem;
-  }
-
-  th, td {
-    border: 1px solid #ccc;
-    padding: 0.5rem;
-    text-align: left;
-  }
-
-  th {
-    background: #e9ecef;
-  }
-
-  table tbody tr:hover {
-    background: #e9ecef;
-  }
-
-  a {
-    color: #007bff;
-    text-decoration: none;
-  }
-
-  a:hover {
-    text-decoration: underline;
-  }
-
-  /* Header logout */
-  header {
-    display: flex;
-    justify-content: flex-end;
-    padding: 10px;
-    background: #fff;
-    border-bottom: 1px solid #ccc;
-  }
-
-  header button {
-    padding: 5px 10px;
-    border-radius: 5px;
-    border: none;
-    background: #ff4b5c;
-    color: white;
-    cursor: pointer;
-  }
-
-  header button:hover {
-    background: #e03a4b;
-  }
-
-</style>
+    /* Área de contenido de módulo */
+    .content { padding: 20px; overflow-y: auto; flex: 1; }
+    .content h2 { color: #333; margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #e9ecef; }
+    button.crud-btn { padding: 5px 10px; margin-right: 5px; cursor: pointer; border-radius: 3px; border: none; color: white; }
+    button.edit { background: #ffc107; }
+    button.delete { background: #dc3545; }
+    .add-btn { background: #28a745; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
+    input.search-input { padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 10px; width: 250px; }
+  </style>
 </head>
 <body>
 
-<nav class="sidebar">
-  <button onclick="showModule('comunicados')">Comunicados</button>
-  <button onclick="showModule('documentos')">Documentos</button>
-  <button onclick="showModule('anexos')">Anexos</button>
-</nav>
-
-<main class="content">
-  <header>
-    <button onclick="logout()">Cerrar Sesión</button>
-  </header>
-
-  <!-- Módulo Comunicados -->
-  <div id="comunicadosModule" class="module">
-    <h2>Comunicados</h2>
-    <form onsubmit="addItem(event, 'comunicados')">
-      <input type="text" name="nombre" placeholder="Nombre" required>
-      <input type="text" name="tipoDocumento" placeholder="Tipo" required>
-      <input type="text" name="link" placeholder="Link" required>
-      <button type="submit">Agregar</button>
-    </form>
-    <div class="search-container">
-      <input type="text" id="searchComunicados" placeholder="Buscar por nombre..." onkeyup="filterTable('comunicados')">
-    </div>
-    <table id="comunicadosTable">
-      <thead>
-        <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario</th><th>Acciones</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <!-- Barra lateral -->
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <button class="active" onclick="loadModule('comunicados')">Comunicados</button>
+    <button onclick="loadModule('documentos')">Documentos</button>
+    <button onclick="loadModule('anexos')">Anexos</button>
   </div>
 
-  <!-- Módulo Documentos -->
-  <div id="documentosModule" class="module">
-    <h2>Documentos</h2>
-    <form onsubmit="addItem(event, 'documentos')">
-      <input type="text" name="nombre" placeholder="Nombre" required>
-      <input type="text" name="tipoDocumento" placeholder="Tipo" required>
-      <input type="text" name="link" placeholder="Link" required>
-      <button type="submit">Agregar</button>
-    </form>
-    <div class="search-container">
-      <input type="text" id="searchDocumentos" placeholder="Buscar por nombre..." onkeyup="filterTable('documentos')">
+  <!-- Contenido principal -->
+  <div class="main">
+    <header>
+      <h1>Panel de Administración</h1>
+      <div class="user-info">
+        <span id="userName"></span>
+        <button onclick="logout()">Cerrar Sesión</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Buscador y botón agregar -->
+      <div id="moduleHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre..." oninput="filterTable()">
+        <button class="add-btn" onclick="addItem()">Agregar</button>
+      </div>
+
+      <!-- Contenedor dinámico para tablas -->
+      <div id="moduleContainer"></div>
     </div>
-    <table id="documentosTable">
-      <thead>
-        <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario</th><th>Acciones</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
   </div>
 
-  <!-- Módulo Anexos -->
-  <div id="anexosModule" class="module">
-    <h2>Anexos</h2>
-    <form onsubmit="addItem(event, 'anexos')">
-      <input type="text" name="nombre" placeholder="Nombre" required>
-      <input type="text" name="tipoDocumento" placeholder="Tipo" required>
-      <input type="text" name="link" placeholder="Link" required>
-      <button type="submit">Agregar</button>
-    </form>
-    <div class="search-container">
-      <input type="text" id="searchAnexos" placeholder="Buscar por nombre..." onkeyup="filterTable('anexos')">
-    </div>
-    <table id="anexosTable">
-      <thead>
-        <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario</th><th>Acciones</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <script src="./js/app.js"></script>
+  <script>
+    let currentModule = 'comunicados';
+    let allItems = [];
 
-</main>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Cargar usuario
+      let user = null;
+      try {
+        user = JSON.parse(localStorage.getItem('usuario'));
+      } catch(e) { localStorage.removeItem('usuario'); }
+      
+      if(!user) { window.location.href = "index.html"; return; }
+      document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
 
-<script src="./js/app.js"></script>
-<script>
-  // Mostrar módulo activo
-  function showModule(tipo) {
-    document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
-    document.getElementById(tipo + 'Module').classList.add('active');
-  }
+      // Cargar módulo inicial
+      await loadModule(currentModule);
+    });
 
-  // Mostrar por defecto Comunicados
-  showModule('comunicados');
-</script>
+    async function loadModule(module) {
+      currentModule = module;
 
+      // Actualizar botón activo
+      document.querySelectorAll('.sidebar button').forEach(btn => {
+        btn.classList.remove('active');
+        if(btn.textContent.toLowerCase() === module) btn.classList.add('active');
+      });
+
+      // Obtener datos
+      allItems = await getItems(module);
+      renderTable(allItems);
+    }
+
+    function renderTable(items) {
+      const container = document.getElementById('moduleContainer');
+      if(!container) return;
+
+      if(items.length === 0) { container.innerHTML = "<p>No hay registros.</p>"; return; }
+
+      let html = `<table>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Tipo</th>
+                      <th>Link</th>
+                      <th>QR</th>
+                      <th>Usuario</th>
+                      <th>Fecha</th>
+                      <th>Visitas</th>
+                      <th>Acciones</th>
+                    </tr>`;
+      items.forEach(item => {
+        const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
+        html += `<tr>
+                  <td>${item[idKey]}</td>
+                  <td>${item.Nombre}</td>
+                  <td>${item.Tipo}</td>
+                  <td><a href="${item.Link}" target="_blank">Ver</a></td>
+                  <td><img src="${item["QR Online"]}" width="50"/></td>
+                  <td>${item["Usuario Crea"]}</td>
+                  <td>${item["Fecha Creado"]}</td>
+                  <td>${item.VisitasTotales}</td>
+                  <td>
+                    <button class="crud-btn edit" onclick="editItem('${currentModule}', '${item[idKey]}')">Editar</button>
+                    <button class="crud-btn delete" onclick="deleteItem('${currentModule}', '${item[idKey]}')">Eliminar</button>
+                  </td>
+                </tr>`;
+      });
+      html += `</table>`;
+      container.innerHTML = html;
+    }
+
+    function filterTable() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allItems.filter(item => item.Nombre.toLowerCase().includes(query));
+      renderTable(filtered);
+    }
+
+    async function addItem() {
+      const nombre = prompt("Ingrese nombre:");
+      const tipoDocumento = prompt("Ingrese tipo:");
+      const link = prompt("Ingrese link:");
+      if(nombre && tipoDocumento && link) {
+        try {
+          await createItem(currentModule, nombre, tipoDocumento, link);
+          alert("Registro agregado correctamente");
+          await loadModule(currentModule);
+        } catch(err) {
+          alert("Error al agregar registro: " + err.message);
+        }
+      }
+    }
+
+  </script>
 </body>
 </html>
