@@ -1,7 +1,8 @@
 /************************************************************
  *          URL DE LA WEB APP (Google Apps Script)
  ************************************************************/
-const API_URL = "https://script.google.com/macros/s/AKfycbzual47SlXlozqzIsnJsBVBUg39OCKKDHyaDJMajV_YGUOi5cjKltZWkrmbC4-k4wn4sg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzt77BLIMnAJYsrsAKAF2zm5A6HDorPXV4c7FcXm97PpbYCMZX2xT29LTZojfhX2tU7VA/exec";
+
 
 /************************************************************
  *                  LOGIN
