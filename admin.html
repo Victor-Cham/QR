@@ -24,22 +24,21 @@
     /* Área de contenido de módulo */
     .content { padding: 20px; overflow-y: auto; flex: 1; }
     .content h2 { color: #333; margin-top: 0; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     th { background: #e9ecef; }
+
     button.crud-btn { padding: 5px 10px; margin-right: 5px; cursor: pointer; border-radius: 3px; border: none; color: white; }
     button.edit { background: #ffc107; }
     button.delete { background: #dc3545; }
-    .add-btn { background: #28a745; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
+
     input.search-input { padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 10px; width: 250px; }
 
-    /* Modal Formulario Agregar */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
-    .modal-content { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 400px; position: relative; }
-    .modal-content h3 { margin-top: 0; }
-    .modal-content input { width: 100%; padding: 0.7rem; margin: 0.5rem 0; border-radius: 5px; border: 1px solid #ccc; }
-    .modal-content button { padding: 0.7rem 1rem; margin-top: 10px; border: none; border-radius: 5px; cursor: pointer; }
-    .modal-content .close { position: absolute; top: 10px; right: 10px; cursor: pointer; background: #dc3545; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; justify-content: center; align-items: center; }
+    /* Formulario estático */
+    #formAgregarContainer { margin-bottom: 20px; background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    #formAgregarContainer input { padding: 8px; margin: 5px 0; width: 100%; border-radius: 5px; border: 1px solid #ccc; }
+    #formAgregarContainer button { margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -63,10 +62,21 @@
     </header>
 
     <div class="content">
-      <!-- Buscador y botón agregar -->
-      <div id="moduleHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+
+      <!-- Buscador -->
+      <div id="moduleHeader">
         <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre..." oninput="filterTable()">
-        <button class="add-btn" onclick="openModal()">Agregar</button>
+      </div>
+
+      <!-- Formulario estático para agregar registros -->
+      <div id="formAgregarContainer">
+        <h3>Agregar Registro</h3>
+        <form id="formAgregar">
+          <input type="text" name="nombre" placeholder="Nombre" required>
+          <input type="text" name="tipoDocumento" placeholder="Tipo" required>
+          <input type="text" name="link" placeholder="Link" required>
+          <button type="submit" style="background:#28a745; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer;">Guardar</button>
+        </form>
       </div>
 
       <!-- Contenedor dinámico para tablas -->
@@ -74,50 +84,9 @@
     </div>
   </div>
 
-  <!-- Modal Formulario -->
-  <div id="modalForm" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal()">&times;</span>
-      <h3>Agregar Registro</h3>
-      <form id="formAgregar">
-        <input type="text" name="nombre" placeholder="Nombre" required>
-        <input type="text" name="tipoDocumento" placeholder="Tipo" required>
-        <input type="text" name="link" placeholder="Link" required>
-        <button type="submit" style="background:#28a745; color:white;">Guardar</button>
-      </form>
-    </div>
-  </div>
-
   <script src="./js/app.js"></script>
   <script>
-    let currentModule = 'comunicados';
-
-    // Cargar sesión
-    document.addEventListener('DOMContentLoaded', async () => {
-      let user = null;
-      try {
-        const usuarioStr = localStorage.getItem('usuario');
-        if(usuarioStr) user = JSON.parse(usuarioStr);
-      } catch(e) {
-        localStorage.removeItem('usuario');
-      }
-
-      if(!user) {
-        window.location.href = "index.html";
-        return;
-      }
-
-      document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
-
-      await loadModule(currentModule);
-    });
-
-    // Modal
-    const modal = document.getElementById('modalForm');
-    function openModal() { modal.style.display = 'flex'; }
-    function closeModal() { modal.style.display = 'none'; }
-
-    // Enviar formulario
+    // Inicializar formulario estático
     document.getElementById('formAgregar').addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
@@ -129,7 +98,6 @@
         try {
           await createItem(currentModule, nombre, tipoDocumento, link);
           alert("Registro agregado correctamente");
-          closeModal();
           form.reset();
           await loadModule(currentModule);
         } catch(err) {
@@ -138,15 +106,23 @@
       }
     });
 
-    // Filtrar tabla
-    function filterTable() {
-      const query = document.getElementById('searchInput').value.toLowerCase();
-      const rows = document.querySelectorAll("#moduleContainer table tbody tr");
-      rows.forEach(row => {
-        const nombre = row.cells[1].innerText.toLowerCase();
-        row.style.display = nombre.includes(query) ? "" : "none";
-      });
-    }
+    // Mostrar nombre del usuario y cargar módulo inicial
+    document.addEventListener('DOMContentLoaded', async () => {
+      let user = null;
+      try {
+        user = JSON.parse(localStorage.getItem('usuario'));
+      } catch(e) {
+        localStorage.removeItem('usuario');
+      }
+
+      if(!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
+      await loadModule(currentModule);
+    });
   </script>
 </body>
 </html>
