@@ -7,12 +7,14 @@
   <link rel="stylesheet" href="./css/styles.css">
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    h2 { color: #333; }
+    h2 { color: #333; margin-top: 40px; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     th { background: #f2f2f2; }
     button { padding: 5px 10px; margin-right: 5px; cursor: pointer; }
-    .container { margin-bottom: 40px; }
+    .module { margin-bottom: 50px; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
+    .module h2 { margin-top: 0; }
+    .module input, .module button { margin-right: 10px; margin-top: 5px; }
   </style>
 </head>
 <body>
@@ -20,28 +22,39 @@
   <h1>Panel de Administración</h1>
   <button onclick="logout()">Cerrar Sesión</button>
 
-  <!-- Formulario para registrar un nuevo elemento -->
-  <div class="container">
-    <h2>Agregar Nuevo Comunicado</h2>
-    <input type="text" id="nuevoNombre" placeholder="Nombre">
-    <input type="text" id="nuevoTipo" placeholder="Tipo Documento">
-    <input type="file" id="nuevoArchivo">
-    <button onclick="agregarNuevo('comunicados')">Registrar</button>
-  </div>
-
-  <!-- Contenedores de tablas -->
-  <div class="container">
+  <!-- ================== MODULO COMUNICADOS ================== -->
+  <div class="module" id="moduleComunicados">
     <h2>Comunicados</h2>
+    <div>
+      <input type="text" id="nombreComunicado" placeholder="Nombre">
+      <input type="text" id="tipoComunicado" placeholder="Tipo Documento">
+      <input type="file" id="archivoComunicado">
+      <button onclick="agregarNuevo('comunicados')">Registrar Comunicado</button>
+    </div>
     <div id="comunicadosContainer"></div>
   </div>
 
-  <div class="container">
+  <!-- ================== MODULO DOCUMENTOS ================== -->
+  <div class="module" id="moduleDocumentos">
     <h2>Documentos</h2>
+    <div>
+      <input type="text" id="nombreDocumento" placeholder="Nombre">
+      <input type="text" id="tipoDocumento" placeholder="Tipo Documento">
+      <input type="file" id="archivoDocumento">
+      <button onclick="agregarNuevo('documentos')">Registrar Documento</button>
+    </div>
     <div id="documentosContainer"></div>
   </div>
 
-  <div class="container">
+  <!-- ================== MODULO ANEXOS ================== -->
+  <div class="module" id="moduleAnexos">
     <h2>Anexos</h2>
+    <div>
+      <input type="text" id="nombreAnexo" placeholder="Nombre">
+      <input type="text" id="tipoAnexo" placeholder="Tipo Documento">
+      <input type="file" id="archivoAnexo">
+      <button onclick="agregarNuevo('anexos')">Registrar Anexo</button>
+    </div>
     <div id="anexosContainer"></div>
   </div>
 
@@ -87,44 +100,22 @@
       container.innerHTML = html;
     }
 
-    // Editar item
-    async function editItem(tipo, id) {
-      const nombre = prompt("Ingrese nuevo nombre:");
-      const tipoDocumento = prompt("Ingrese nuevo tipo:");
-      const link = prompt("Ingrese nuevo link:");
-
-      if(nombre && tipoDocumento && link) {
-        try {
-          await updateItem(tipo.toLowerCase(), id, nombre, tipoDocumento, link);
-          alert("Actualizado correctamente");
-          location.reload();
-        } catch (error) {
-          alert("Error al actualizar: " + error.message);
-        }
-      }
-    }
-
-    // Eliminar item
-    async function deleteItemHandler(tipo, id) {
-      if(confirm("¿Desea eliminar este registro?")) {
-        try {
-          await deleteItem(tipo.toLowerCase(), id);
-          alert("Eliminado correctamente");
-          location.reload();
-        } catch(error) {
-          alert("Error al eliminar: " + error.message);
-        }
-      }
-    }
-
-    // Alias para botones de eliminar
-    window.deleteItem = deleteItemHandler;
-
     // Registrar nuevo elemento con archivo
     async function agregarNuevo(tipo) {
-      const nombre = document.getElementById('nuevoNombre').value.trim();
-      const tipoDoc = document.getElementById('nuevoTipo').value.trim();
-      const archivo = document.getElementById('nuevoArchivo');
+      let nombre, tipoDoc, archivo;
+      if(tipo === "comunicados") {
+        nombre = document.getElementById('nombreComunicado').value.trim();
+        tipoDoc = document.getElementById('tipoComunicado').value.trim();
+        archivo = document.getElementById('archivoComunicado');
+      } else if(tipo === "documentos") {
+        nombre = document.getElementById('nombreDocumento').value.trim();
+        tipoDoc = document.getElementById('tipoDocumento').value.trim();
+        archivo = document.getElementById('archivoDocumento');
+      } else if(tipo === "anexos") {
+        nombre = document.getElementById('nombreAnexo').value.trim();
+        tipoDoc = document.getElementById('tipoAnexo').value.trim();
+        archivo = document.getElementById('archivoAnexo');
+      }
 
       if(!nombre || !tipoDoc || archivo.files.length === 0) {
         alert("Complete todos los campos y seleccione un archivo");
@@ -132,10 +123,10 @@
       }
 
       try {
-        const result = await createItemWithFile(tipo, nombre, tipoDoc, archivo);
+        await createItemWithFile(tipo, nombre, tipoDoc, archivo);
         alert("Registrado correctamente. QR generado.");
         location.reload();
-      } catch (error) {
+      } catch(error) {
         alert("Error al registrar: " + error.message);
       }
     }
@@ -151,13 +142,8 @@
         localStorage.removeItem('usuario');
       }
 
-      if(!user) {
-        window.location.href = "index.html";
-        return;
-      }
-
-      const tipo = user.TipoUsuario?.trim().toLowerCase() || "";
-      if(tipo !== "admin") {
+      if(!user) { window.location.href = "index.html"; return; }
+      if(user.TipoUsuario?.trim().toLowerCase() !== "admin") {
         alert("No tiene permisos para acceder");
         window.location.href = "index.html";
         return;
@@ -168,9 +154,9 @@
         const documentos = await getItems("documentos");
         const anexos = await getItems("anexos");
 
-        renderTable("comunicadosContainer", comunicados, "Comunicado");
-        renderTable("documentosContainer", documentos, "Documento");
-        renderTable("anexosContainer", anexos, "Anexo");
+        renderTable("comunicadosContainer", comunicados, "comunicados");
+        renderTable("documentosContainer", documentos, "documentos");
+        renderTable("anexosContainer", anexos, "anexos");
       } catch (error) {
         console.error("Error al cargar datos en el panel de admin:", error);
         alert("Error al cargar los datos en el panel de admin.");
