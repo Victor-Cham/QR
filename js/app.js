@@ -1,260 +1,119 @@
-/************************************************************
- *          URL DE LA WEB APP (Google Apps Script)
- ************************************************************/
-const API_URL = "https://script.google.com/macros/s/AKfycbzt77BLIMnAJYsrsAKAF2zm5A6HDorPXV4c7FcXm97PpbYCMZX2xT29LTZojfhX2tU7VA/exec";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Admin</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f6f8; }
+    .sidebar { width: 220px; background: #17a2b8; color: white; display: flex; flex-direction: column; }
+    .sidebar h2 { text-align: center; margin: 20px 0; font-size: 1.4rem; }
+    .sidebar button { background: transparent; border: none; color: white; padding: 15px 20px; text-align: left; cursor: pointer; font-size: 1rem; width: 100%; }
+    .sidebar button:hover, .sidebar button.active { background: #138496; }
 
-let currentModule = 'comunicados';
+    .main { flex: 1; display: flex; flex-direction: column; }
+    header { background: #ffffff; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    header h1 { margin: 0; font-size: 1.5rem; color: #333; }
+    header .user-info { display: flex; align-items: center; gap: 10px; font-size: 1rem; color: #333; }
+    header .user-info button { background: #ff4b5c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; }
 
-/************************************************************
- *                  LOGIN
- ************************************************************/
-async function login(usuario, contrasena) {
-  if (!usuario || !contrasena) {
-    alert("Debe ingresar usuario y contraseña");
-    return;
-  }
+    .content { padding: 20px; overflow-y: auto; flex: 1; }
+    .content h2 { color: #333; margin-top: 0; }
 
-  try {
-    const response = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`);
-    const result = await response.json();
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #e9ecef; }
+    button.crud-btn { padding: 5px 10px; margin-right: 5px; cursor: pointer; border-radius: 3px; border: none; color: white; }
+    button.edit { background: #ffc107; }
+    button.delete { background: #dc3545; }
 
-    if (!result.success) {
-      alert(result.message || "Usuario o contraseña incorrecta");
-      return;
-    }
+    .add-form { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .add-form label { display: block; margin: 10px 0 5px; }
+    .add-form input[type="text"], .add-form select, .add-form input[type="file"] { width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+    .add-form button { margin-top: 10px; background: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
 
-    localStorage.setItem('usuario', JSON.stringify(result.usuario));
+    .search-input { padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 10px; width: 250px; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <button class="active" onclick="loadModule('comunicados'); currentModule='comunicados'">Comunicados</button>
+    <button onclick="loadModule('documentos'); currentModule='documentos'">Documentos</button>
+    <button onclick="loadModule('anexos'); currentModule='anexos'">Anexos</button>
+  </div>
 
-    const tipo = (result.usuario.TipoUsuario || "").trim().toLowerCase();
-    switch (tipo) {
-      case "superadmin":
-        window.location.href = "superadmin.html"; break;
-      case "admin":
-        window.location.href = "admin.html"; break;
-      case "usuario":
-        window.location.href = "usuario.html"; break;
-      default:
-        alert("Tipo de usuario no válido, revise la hoja PERSONAS");
-        localStorage.removeItem('usuario');
-    }
+  <div class="main">
+    <header>
+      <h1>Panel de Administración</h1>
+      <div class="user-info">
+        <span id="userName"></span>
+        <button onclick="logout()">Cerrar Sesión</button>
+      </div>
+    </header>
 
-  } catch (error) {
-    console.error("Error al conectar con la Web App:", error);
-    alert("No se pudo conectar con el servidor. Intente más tarde.");
-  }
-}
+    <div class="content">
+      <!-- Formulario para agregar registro -->
+      <div class="add-form">
+        <h3>Agregar nuevo registro</h3>
+        <form id="addForm">
+          <label for="nombre">Nombre:</label>
+          <input type="text" id="nombre" name="nombre" required>
 
-/************************************************************
- *                  LOGOUT
- ************************************************************/
-function logout() {
-  localStorage.removeItem('usuario');
-  window.location.href = "index.html";
-}
+          <label for="tipoDocumento">Tipo:</label>
+          <input type="text" id="tipoDocumento" name="tipoDocumento" required>
 
-/************************************************************
- *                  FUNCIONES CRUD
- ************************************************************/
-async function getItems(tipo) {
-  try {
-    const resp = await fetch(`${API_URL}?action=getItems&tipo=${tipo}`);
-    const data = await resp.json();
-    if (!data.success) return [];
-    return data.items || [];
-  } catch (err) {
-    console.error("Error al obtener items:", err);
-    return [];
-  }
-}
+          <label for="archivo">Archivo (Word, PDF, Imagen):</label>
+          <input type="file" id="archivo" name="archivo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
 
-// Subir archivo y registrar en Sheet
-async function uploadItem(tipo, nombre, tipoDocumento, archivo) {
-  if (!archivo) {
-    alert("Debe seleccionar un archivo");
-    return;
-  }
+          <button type="submit">Agregar</button>
+        </form>
+      </div>
 
-  const usuario = JSON.parse(localStorage.getItem('usuario') || "{}").DNI || "";
+      <!-- Buscador -->
+      <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre..." oninput="filterTable()">
 
-  const formData = new FormData();
-  formData.append("action", "uploadItem");
-  formData.append("tipo", tipo);
-  formData.append("nombre", nombre);
-  formData.append("tipoDocumento", tipoDocumento);
-  formData.append("usuario", usuario);
-  formData.append("archivo", archivo);
-  formData.append("nombreArchivo", archivo.name);
-  formData.append("mimeType", archivo.type);
+      <!-- Contenedor para la tabla -->
+      <div id="moduleContainer"></div>
+    </div>
+  </div>
 
-  try {
-    const resp = await fetch(API_URL, { method: "POST", body: formData });
-    const data = await resp.json();
-    if (!data.success) throw new Error(data.message || "Error al subir el archivo");
+  <script src="./js/app.js"></script>
+  <script>
+    let currentModule = 'comunicados';
 
-    alert("Archivo subido correctamente. ID: " + data.id);
-    await loadModule(tipo);
-  } catch (err) {
-    alert("Error al subir archivo: " + err.message);
-  }
-}
+    document.addEventListener('DOMContentLoaded', async () => {
+      let user = null;
+      try {
+        user = JSON.parse(localStorage.getItem('usuario'));
+      } catch(e) { localStorage.removeItem('usuario'); }
 
-async function updateItem(tipo, id, nombre, tipoDocumento) {
-  const body = new URLSearchParams({ action: "updateItem", tipo, id, nombre, tipoDocumento });
-  const resp = await fetch(API_URL, { method: "POST", body });
-  const data = await resp.json();
-  if (!data.success) throw new Error(data.message || "Error al actualizar item");
-  return true;
-}
+      if(!user) { window.location.href = "index.html"; return; }
 
-async function deleteItem(tipo, id) {
-  const body = new URLSearchParams({ action: "deleteItem", tipo, id });
-  const resp = await fetch(API_URL, { method: "POST", body });
-  const data = await resp.json();
-  if (!data.success) throw new Error(data.message || "Error al eliminar item");
-  return true;
-}
+      document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
 
-/************************************************************
- *                  RENDER TABLAS
- ************************************************************/
-function renderTable(tipo, items) {
-  const container = document.getElementById('moduleContainer');
-  if (!container) return;
+      await loadModule(currentModule);
+    });
 
-  if (!items.length) {
-    container.innerHTML = "<p>No hay registros.</p>";
-    return;
-  }
+    // Manejar envío de formulario
+    document.getElementById("addForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById("nombre").value.trim();
+      const tipoDocumento = document.getElementById("tipoDocumento").value.trim();
+      const archivoInput = document.getElementById("archivo");
+      if (!archivoInput.files.length) return alert("Debe seleccionar un archivo");
 
-  let html = `<table id="${tipo}Table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Tipo</th>
-                    <th>Archivo</th>
-                    <th>QR</th>
-                    <th>Usuario</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>`;
-  container.innerHTML = html;
+      const archivo = archivoInput.files[0];
 
-  const tbody = container.querySelector("tbody");
-  items.forEach(item => {
-    const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${item[idKey]}</td>
-      <td>${item.Nombre}</td>
-      <td>${item.Tipo}</td>
-      <td><a href="${item.Link}" target="_blank">Ver Archivo</a></td>
-      <td>
-        <img src="${item["QR Online"]}" width="50" height="50" style="cursor:pointer;" onclick="copyToClipboard('${item["QR Online"]}')">
-      </td>
-      <td>${item["Usuario Crea"]}</td>
-      <td>${item["Fecha Creado"]}</td>
-      <td>
-        <button class="crud-btn edit" onclick="editItemHandler('${tipo}', '${item[idKey]}')">Editar</button>
-        <button class="crud-btn delete" onclick="deleteItemHandler('${tipo}', '${item[idKey]}')">Eliminar</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-/************************************************************
- *                  COPIAR QR
- ************************************************************/
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text)
-    .then(() => alert("URL del QR copiada al portapapeles"))
-    .catch(err => alert("Error al copiar: " + err));
-}
-
-/************************************************************
- *                  FILTRO TABLA
- ************************************************************/
-function filterTable() {
-  const input = document.getElementById('searchInput');
-  if (!input) return;
-  const query = input.value.toLowerCase();
-  const rows = document.querySelectorAll("#moduleContainer table tbody tr");
-
-  rows.forEach(row => {
-    const nombre = row.cells[1]?.innerText.toLowerCase() || "";
-    row.style.display = nombre.includes(query) ? "" : "none";
-  });
-}
-
-/************************************************************
- *                  CRUD HANDLERS
- ************************************************************/
-async function editItemHandler(tipo, id) {
-  const nombre = prompt("Ingrese nuevo nombre:");
-  const tipoDocumento = prompt("Ingrese nuevo tipo:");
-
-  if (!nombre || !tipoDocumento) return;
-  try {
-    await updateItem(tipo, id, nombre, tipoDocumento);
-    await loadModule(tipo);
-  } catch (err) {
-    alert("Error al actualizar: " + err.message);
-  }
-}
-
-async function deleteItemHandler(tipo, id) {
-  if (!confirm("¿Desea eliminar este registro?")) return;
-  try {
-    await deleteItem(tipo, id);
-    await loadModule(tipo);
-  } catch (err) {
-    alert("Error al eliminar: " + err.message);
-  }
-}
-
-/************************************************************
- *                  CARGA DE MÓDULOS
- ************************************************************/
-async function loadModule(module) {
-  currentModule = module;
-
-  document.querySelectorAll('.sidebar button').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.textContent.toLowerCase() === module) btn.classList.add('active');
-  });
-
-  const items = await getItems(module);
-  renderTable(module, items);
-}
-
-/************************************************************
- *          INICIALIZACIÓN SEGÚN ROL
- ************************************************************/
-document.addEventListener('DOMContentLoaded', async () => {
-  let user = null;
-  try { user = JSON.parse(localStorage.getItem('usuario')); } 
-  catch(e){ localStorage.removeItem('usuario'); }
-
-  if (!user) return window.location.href = "index.html";
-
-  document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
-
-  await loadModule('comunicados');
-});
-
-/************************************************************
- *          EXPONER FUNCIONES AL GLOBAL
- ************************************************************/
-window.login = login;
-window.logout = logout;
-window.loadModule = loadModule;
-window.filterTable = filterTable;
-window.uploadItem = uploadItem;
-window.editItemHandler = editItemHandler;
-window.deleteItemHandler = deleteItemHandler;
-window.copyToClipboard = copyToClipboard;
+      try {
+        await uploadItem(currentModule, nombre, tipoDocumento, archivo);
+        e.target.reset();
+        await loadModule(currentModule);
+      } catch(err) {
+        alert("Error al agregar registro: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
