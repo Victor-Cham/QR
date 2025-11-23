@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel Admin</title>
   <link rel="stylesheet" href="./css/styles.css">
-
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     h2 { color: #333; }
@@ -21,6 +20,16 @@
   <h1>Panel de Administración</h1>
   <button onclick="logout()">Cerrar Sesión</button>
 
+  <!-- Formulario para registrar un nuevo elemento -->
+  <div class="container">
+    <h2>Agregar Nuevo Comunicado</h2>
+    <input type="text" id="nuevoNombre" placeholder="Nombre">
+    <input type="text" id="nuevoTipo" placeholder="Tipo Documento">
+    <input type="file" id="nuevoArchivo">
+    <button onclick="agregarNuevo('comunicados')">Registrar</button>
+  </div>
+
+  <!-- Contenedores de tablas -->
   <div class="container">
     <h2>Comunicados</h2>
     <div id="comunicadosContainer"></div>
@@ -38,9 +47,7 @@
 
   <script src="./js/app.js"></script>
   <script>
-    /************************************************************
-     * Renderizar tabla con botones CRUD
-     ************************************************************/
+    // Renderizar tabla con botones CRUD
     function renderTable(containerId, items, tipo) {
       const container = document.getElementById(containerId);
       if(!container) return;
@@ -64,11 +71,11 @@
                   <td>${item[idKey]}</td>
                   <td>${item.Nombre}</td>
                   <td>${item.Tipo}</td>
-                  <td><a href="${item.Link}" target="_blank">Ver</a></td>
-                  <td><img src="${item["QR Online"]}" width="50"/></td>
-                  <td>${item["Usuario Crea"]}</td>
-                  <td>${item["Fecha Creado"]}</td>
-                  <td>${item.VisitasTotales}</td>
+                  <td>${item.Link ? `<a href="${item.Link}" target="_blank">Ver</a>` : ""}</td>
+                  <td>${item.QR ? `<img src="${item.QR}" width="50"/>` : ""}</td>
+                  <td>${item.Usuario}</td>
+                  <td>${item.Fecha}</td>
+                  <td>${item.Visitas}</td>
                   <td>
                     <button onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
                     <button onclick="deleteItem('${tipo}', '${item[idKey]}')">Eliminar</button>
@@ -80,9 +87,7 @@
       container.innerHTML = html;
     }
 
-    /************************************************************
-     * Editar item
-     ************************************************************/
+    // Editar item
     async function editItem(tipo, id) {
       const nombre = prompt("Ingrese nuevo nombre:");
       const tipoDocumento = prompt("Ingrese nuevo tipo:");
@@ -99,9 +104,7 @@
       }
     }
 
-    /************************************************************
-     * Eliminar item
-     ************************************************************/
+    // Eliminar item
     async function deleteItemHandler(tipo, id) {
       if(confirm("¿Desea eliminar este registro?")) {
         try {
@@ -114,12 +117,30 @@
       }
     }
 
-    // Alias para los botones de eliminar
+    // Alias para botones de eliminar
     window.deleteItem = deleteItemHandler;
 
-    /************************************************************
-     * Inicializar datos de Admin
-     ************************************************************/
+    // Registrar nuevo elemento con archivo
+    async function agregarNuevo(tipo) {
+      const nombre = document.getElementById('nuevoNombre').value.trim();
+      const tipoDoc = document.getElementById('nuevoTipo').value.trim();
+      const archivo = document.getElementById('nuevoArchivo');
+
+      if(!nombre || !tipoDoc || archivo.files.length === 0) {
+        alert("Complete todos los campos y seleccione un archivo");
+        return;
+      }
+
+      try {
+        const result = await createItemWithFile(tipo, nombre, tipoDoc, archivo);
+        alert("Registrado correctamente. QR generado.");
+        location.reload();
+      } catch (error) {
+        alert("Error al registrar: " + error.message);
+      }
+    }
+
+    // Inicializar datos de Admin
     document.addEventListener('DOMContentLoaded', async () => {
       let user = null;
       try {
@@ -156,6 +177,5 @@
       }
     });
   </script>
-
 </body>
 </html>
