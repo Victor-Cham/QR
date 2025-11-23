@@ -1,130 +1,114 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel Admin</title>
-<link rel="stylesheet" href="./css/styles.css">
-<style>
-  body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f8; display: flex; height: 100vh; }
-  
-  /* Sidebar */
-  .sidebar { width: 220px; background: #17a2b8; color: white; display: flex; flex-direction: column; padding-top: 20px; }
-  .sidebar h2 { text-align: center; margin-bottom: 30px; }
-  .sidebar button { background: transparent; border: none; color: white; padding: 15px; text-align: left; width: 100%; cursor: pointer; font-size: 1rem; }
-  .sidebar button:hover, .sidebar button.active { background: #138496; }
-  
-  /* Main content */
-  .main { flex: 1; padding: 20px; overflow-y: auto; }
-  
-  .module { display: none; background: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 2rem; }
-  .module.active { display: block; }
-
-  .form-inline { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-  .form-inline input[type=text], .form-inline input[type=file] { padding: 0.4rem; border-radius: 4px; border: 1px solid #ccc; }
-  .form-inline button { padding: 0.4rem 0.8rem; border: none; border-radius: 5px; background: #28a745; color: white; cursor: pointer; }
-
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-  th { background: #e9ecef; }
-  td img { display: block; max-width: 50px; }
-  td button { margin-right: 5px; padding: 0.3rem 0.5rem; border: none; border-radius: 4px; cursor: pointer; }
-  td button.edit { background: #ffc107; color: white; }
-  td button.delete { background: #dc3545; color: white; }
-
-  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  header h1 { font-size: 1.5rem; }
-  header button { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; background: #ff4b5c; color: white; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Admin</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; display: flex; background: #f4f6f8; }
+    nav { width: 200px; background: #17a2b8; color: white; height: 100vh; padding-top: 2rem; }
+    nav h2 { text-align: center; }
+    nav button { width: 100%; padding: 1rem; border: none; background: #17a2b8; color: white; cursor: pointer; font-size: 1rem; text-align: left; }
+    nav button:hover { background: #138496; }
+    main { flex: 1; padding: 2rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #e9ecef; }
+    button.crud { padding: 0.3rem 0.6rem; margin-right: 3px; cursor: pointer; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    header button { padding: 0.5rem 1rem; border: none; border-radius: 5px; background: #ff4b5c; color: white; cursor: pointer; }
+  </style>
 </head>
 <body>
 
-<div class="sidebar">
-  <h2>Admin Panel</h2>
-  <button class="tab-btn active" data-target="comunicadosModule">Comunicados</button>
-  <button class="tab-btn" data-target="documentosModule">Documentos</button>
-  <button class="tab-btn" data-target="anexosModule">Anexos</button>
-  <button onclick="logout()" style="margin-top:auto; padding: 15px; background:#dc3545;">Cerrar Sesión</button>
-</div>
+  <nav>
+    <h2>Admin</h2>
+    <button onclick="selectModule('comunicados')">Comunicados</button>
+    <button onclick="selectModule('documentos')">Documentos</button>
+    <button onclick="selectModule('anexos')">Anexos</button>
+    <button onclick="logout()">Cerrar Sesión</button>
+  </nav>
 
-<div class="main">
-  <header><h1>Bienvenido Admin</h1></header>
-
-  <!-- Comunicados -->
-  <div id="comunicadosModule" class="module active">
-    <h2>Comunicados</h2>
-    <div class="form-inline">
-      <input type="text" id="nombreComunicado" placeholder="Nombre">
-      <input type="text" id="tipoComunicado" placeholder="Tipo Documento">
-      <input type="file" id="archivoComunicado">
-      <button onclick="agregarNuevo('comunicados')">Registrar</button>
+  <main id="mainContent">
+    <header>
+      <h1 id="moduleTitle">Seleccione un módulo</h1>
+    </header>
+    <div id="moduleContainer">
+      <p>Los datos se mostrarán aquí.</p>
     </div>
-    <div id="comunicadosContainer"></div>
-  </div>
+  </main>
 
-  <!-- Documentos -->
-  <div id="documentosModule" class="module">
-    <h2>Documentos</h2>
-    <div class="form-inline">
-      <input type="text" id="nombreDocumento" placeholder="Nombre">
-      <input type="text" id="tipoDocumento" placeholder="Tipo Documento">
-      <input type="file" id="archivoDocumento">
-      <button onclick="agregarNuevo('documentos')">Registrar</button>
-    </div>
-    <div id="documentosContainer"></div>
-  </div>
+  <script src="./js/app.js"></script>
+  <script>
+    function renderTable(container, items, tipo) {
+      if(!items || !items.length) {
+        container.innerHTML = "<p>No hay datos para mostrar.</p>";
+        return;
+      }
 
-  <!-- Anexos -->
-  <div id="anexosModule" class="module">
-    <h2>Anexos</h2>
-    <div class="form-inline">
-      <input type="text" id="nombreAnexo" placeholder="Nombre">
-      <input type="text" id="tipoAnexo" placeholder="Tipo Documento">
-      <input type="file" id="archivoAnexo">
-      <button onclick="agregarNuevo('anexos')">Registrar</button>
-    </div>
-    <div id="anexosContainer"></div>
-  </div>
-</div>
+      let html = `<table>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Tipo</th>
+                      <th>Link</th>
+                      <th>QR</th>
+                      <th>Usuario</th>
+                      <th>Fecha</th>
+                      <th>Visitas</th>
+                      <th>Acciones</th>
+                    </tr>`;
 
-<script src="./js/app.js"></script>
-<script>
-  // Manejar cambio de módulo con la sidebar
-  const tabButtons = document.querySelectorAll('.tab-btn');
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
-      document.getElementById(btn.dataset.target).classList.add('active');
-      tabButtons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      items.forEach(item => {
+        const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
+        html += `<tr>
+                  <td>${item[idKey]}</td>
+                  <td>${item.Nombre}</td>
+                  <td>${item.Tipo}</td>
+                  <td><a href="${item.Link}" target="_blank">Ver</a></td>
+                  <td><img src="${item["QR Online"]}" width="50"/></td>
+                  <td>${item["Usuario Crea"]}</td>
+                  <td>${item["Fecha Creado"]}</td>
+                  <td>${item.VisitasTotales}</td>
+                  <td>
+                    <button class="crud" onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
+                    <button class="crud" onclick="deleteItem('${tipo}', '${item[idKey]}')">Eliminar</button>
+                  </td>
+                </tr>`;
+      });
+
+      html += "</table>";
+      container.innerHTML = html;
+    }
+
+    async function selectModule(tipo) {
+      const title = document.getElementById("moduleTitle");
+      const container = document.getElementById("moduleContainer");
+      title.textContent = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+
+      try {
+        const items = await getItems(tipo);
+        console.log(tipo, items);
+        renderTable(container, items, tipo);
+      } catch(error) {
+        console.error("Error al cargar el módulo:", error);
+        container.innerHTML = "<p>Error al cargar los datos del panel.</p>";
+      }
+    }
+
+    // Inicialización para verificar sesión
+    document.addEventListener('DOMContentLoaded', () => {
+      let user = null;
+      try { user = JSON.parse(localStorage.getItem('usuario')); } 
+      catch(e){ localStorage.removeItem('usuario'); }
+
+      if(!user || user.TipoUsuario.trim().toLowerCase() !== 'admin') {
+        alert("No tiene permisos para acceder");
+        window.location.href = "index.html";
+        return;
+      }
     });
-  });
-
-  // Inicializar datos como antes
-  document.addEventListener('DOMContentLoaded', async () => {
-    let user = null;
-    try { user = JSON.parse(localStorage.getItem('usuario')); } 
-    catch(e){ localStorage.removeItem('usuario'); }
-
-    if(!user || user.TipoUsuario.trim().toLowerCase() !== 'admin') {
-      window.location.href = "index.html";
-      return;
-    }
-
-    try {
-      const comunicados = await getItems("comunicados");
-      const documentos = await getItems("documentos");
-      const anexos = await getItems("anexos");
-
-      renderTable("comunicadosContainer", comunicados, "Comunicado");
-      renderTable("documentosContainer", documentos, "Documento");
-      renderTable("anexosContainer", anexos, "Anexo");
-    } catch(error) {
-      console.error(error);
-      alert("Error al cargar los datos del panel.");
-    }
-  });
-</script>
-
+  </script>
 </body>
 </html>
