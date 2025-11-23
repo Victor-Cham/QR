@@ -3,127 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SuperAdmin - Dashboard</title>
+  <title>SuperAdmin Dashboard</title>
   <link rel="stylesheet" href="./css/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f8; margin:0; }
-    header { background: #007bff; color: white; padding: 1rem; text-align: center; position: relative; }
-    header h1 { margin:0; }
-    header button { position: absolute; top: 1rem; right: 1rem; background: #dc3545; border: none; padding: 0.5rem 1rem; color: white; border-radius:6px; cursor:pointer; }
-    header button:hover { background:#c82333; }
-    main { padding:2rem; max-width: 1000px; margin:auto; }
-    .stats { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-around; margin-bottom: 2rem; }
-    .card { flex:1 1 200px; background:white; padding:1rem; border-radius:8px; box-shadow:0 5px 15px rgba(0,0,0,0.1); text-align:center; }
-    .card h3 { margin:0.5rem 0; color:#007bff; font-size:1.5rem; }
-    .card p { margin:0; color:#333; font-size:1rem; }
-    section { margin-bottom: 3rem; text-align:center; }
-    section h2 { margin-bottom: 1rem; color:#333; }
-    canvas { background:white; border-radius:8px; box-shadow:0 5px 15px rgba(0,0,0,0.1); padding: 1rem; }
+    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; }
+    header { background: #007bff; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; font-size: 1.5rem; }
+    header button { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; background: #ff4b5c; color: white; }
+    main { padding: 2rem; }
+    .stats-container { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .stat-card { background: white; padding: 1rem; border-radius: 8px; flex: 1 1 200px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+    canvas { width: 100% !important; max-width: 400px; height: 300px !important; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>Dashboard SuperAdmin</h1>
-    <button type="button" onclick="logout()">Cerrar sesión</button>
-  </header>
+<header>
+  <h1>SuperAdmin Dashboard</h1>
+  <button onclick="logout()">Cerrar Sesión</button>
+</header>
 
-  <main>
-    <div class="stats">
-      <div class="card">
-        <p>Usuarios</p>
-        <h3 id="usuariosCount">0</h3>
-      </div>
-      <div class="card">
-        <p>Comunicados</p>
-        <h3 id="comunicadosCount">0</h3>
-      </div>
-      <div class="card">
-        <p>Documentos</p>
-        <h3 id="documentosCount">0</h3>
-      </div>
-      <div class="card">
-        <p>Anexos</p>
-        <h3 id="anexosCount">0</h3>
-      </div>
-    </div>
+<main>
+  <h2>Estadísticas Generales</h2>
+  <div class="stats-container" id="statsContainer">
+    <!-- Aquí se generarán las tarjetas con estadísticas -->
+  </div>
+  <canvas id="chartStats"></canvas>
+</main>
 
-    <section>
-      <h2>Estadísticas de Documentos y Anexos</h2>
-      <canvas id="barChart" style="max-width:800px;margin:auto;"></canvas>
-    </section>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem('usuario'));
+    } catch(e) { localStorage.removeItem('usuario'); }
+    if(!user || user.TipoUsuario.trim().toLowerCase() !== 'superadmin') {
+      window.location.href = "index.html";
+      return;
+    }
 
-    <section>
-      <h2>Distribución de Tipos de Contenido</h2>
-      <canvas id="pieChart" style="max-width:600px;margin:auto;"></canvas>
-    </section>
-  </main>
-
-  <script src="./js/app.js"></script>
-  <script>
-    // Verificación de sesión al cargar
-    document.addEventListener('DOMContentLoaded', async () => {
-      const usuario = JSON.parse(localStorage.getItem('usuario'));
-      if (!usuario || usuario.TipoUsuario.trim().toLowerCase() !== 'superadmin') {
-        window.location.href = 'index.html'; // Redirige si no hay sesión válida
-        return;
+    try {
+      const stats = await getStats();
+      const container = document.getElementById('statsContainer');
+      for(const key in stats) {
+        const div = document.createElement('div');
+        div.className = 'stat-card';
+        div.innerHTML = `<h3>${key}</h3><p>${stats[key]}</p>`;
+        container.appendChild(div);
       }
 
-      // Logout
-      window.logout = function() {
-        localStorage.removeItem('usuario');
-        window.location.href = 'index.html';
-      };
+      // Ejemplo de gráfico
+      const ctx = document.getElementById('chartStats').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(stats),
+          datasets: [{ label: 'Cantidad', data: Object.values(stats), backgroundColor: '#007bff' }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
 
-      // Cargar estadísticas y gráficos
-      try {
-        const stats = await getStats(); // Debe estar definida en app.js
-        document.getElementById('usuariosCount').textContent = stats.usuarios;
-        document.getElementById('comunicadosCount').textContent = stats.comunicados;
-        document.getElementById('documentosCount').textContent = stats.documentos;
-        document.getElementById('anexosCount').textContent = stats.anexos;
-
-        // Gráfico de barras
-        const barCtx = document.getElementById('barChart').getContext('2d');
-        new Chart(barCtx, {
-          type: 'bar',
-          data: {
-            labels: ['Comunicados', 'Documentos', 'Anexos'],
-            datasets: [{
-              label: 'Cantidad de Items',
-              data: [stats.comunicados, stats.documentos, stats.anexos],
-              backgroundColor: ['#007bff', '#28a745', '#ffc107']
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } }
-          }
-        });
-
-        // Gráfico de pastel
-        const pieCtx = document.getElementById('pieChart').getContext('2d');
-        new Chart(pieCtx, {
-          type: 'pie',
-          data: {
-            labels: ['Comunicados', 'Documentos', 'Anexos'],
-            datasets: [{
-              data: [stats.comunicados, stats.documentos, stats.anexos],
-              backgroundColor: ['#007bff', '#28a745', '#ffc107']
-            }]
-          },
-          options: { responsive: true }
-        });
-
-      } catch (error) {
-        console.error(error);
-        alert("Error al cargar estadísticas y gráficos");
-      }
-    });
-  </script>
+    } catch(err) {
+      console.error(err);
+      alert("Error al cargar estadísticas y gráficos");
+    }
+  });
+</script>
 
 </body>
 </html>
