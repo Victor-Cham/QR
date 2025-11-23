@@ -5,142 +5,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel Admin</title>
   <link rel="stylesheet" href="./css/styles.css">
-  <style>
-    body { margin: 0; font-family: Arial, sans-serif; display: flex; height: 100vh; background: #f4f6f8; }
-    /* Sidebar */
-    .sidebar { width: 220px; background: #17a2b8; color: white; padding: 1rem; display: flex; flex-direction: column; }
-    .sidebar h2 { font-size: 1.2rem; margin-bottom: 1rem; }
-    .sidebar button { margin-bottom: 0.5rem; padding: 0.5rem; border: none; border-radius: 5px; background: #138496; color: white; cursor: pointer; }
-    .sidebar button:hover { background: #0f6674; }
-
-    /* Main content */
-    .main { flex: 1; padding: 2rem; overflow-y: auto; }
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    header h1 { margin: 0; color: #333; }
-    header button { padding: 0.5rem 1rem; border: none; border-radius: 5px; background: #ff4b5c; color: white; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-    th { background: #e9ecef; }
-    form { margin-top: 1rem; background: #fff; padding: 1rem; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
-    input, select { padding: 0.4rem; margin-right: 0.5rem; margin-bottom: 0.5rem; }
-    input[type="file"] { padding: 0; }
-    form button { background: #17a2b8; color: white; border: none; padding: 0.5rem 1rem; cursor: pointer; border-radius: 5px; }
-    form button:hover { background: #138496; }
-  </style>
 </head>
 <body>
 
+  <!-- Sidebar -->
   <div class="sidebar">
-    <h2>Admin Panel</h2>
-    <button onclick="selectModule('comunicados')">Comunicados</button>
-    <button onclick="selectModule('documentos')">Documentos</button>
-    <button onclick="selectModule('anexos')">Anexos</button>
-    <button onclick="logout()">Cerrar Sesión</button>
+    <h2>Admin</h2>
+    <button onclick="showModule('comunicados')" data-icon="📢">Comunicados</button>
+    <button onclick="showModule('documentos')" data-icon="📄">Documentos</button>
+    <button onclick="showModule('anexos')" data-icon="📎">Anexos</button>
   </div>
 
+  <!-- Main content -->
   <div class="main">
     <header>
-      <h1 id="moduleTitle">Selecciona un módulo</h1>
+      <h1>Panel de Administración</h1>
+      <button onclick="logout()">Cerrar Sesión</button>
     </header>
 
-    <!-- Contenedor donde se renderizan tablas y formulario -->
-    <div id="moduleContainer"></div>
+    <!-- Contenedores para cada módulo -->
+    <div id="comunicadosModule" class="module" style="display:none;">
+      <h2>Comunicados</h2>
+      <form onsubmit="addItem(event, 'comunicados')">
+        <input type="text" name="nombre" placeholder="Nombre" required>
+        <input type="text" name="tipoDocumento" placeholder="Tipo" required>
+        <input type="text" name="link" placeholder="Link" required>
+        <button type="submit">Agregar</button>
+      </form>
+      <table id="comunicadosTable">
+        <thead>
+          <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario</th><th>Acciones</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="documentosModule" class="module" style="display:none;">
+      <h2>Documentos</h2>
+      <form onsubmit="addItem(event, 'documentos')">
+        <input type="text" name="nombre" placeholder="Nombre" required>
+        <input type="text" name="tipoDocumento" placeholder="Tipo" required>
+        <input type="text" name="link" placeholder="Link" required>
+        <button type="submit">Agregar</button>
+      </form>
+      <table id="documentosTable">
+        <thead>
+          <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario</th><th>Acciones</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="anexosModule" class="module" style="display:none;">
+      <h2>Anexos</h2>
+      <form onsubmit="addItem(event, 'anexos')">
+        <input type="text" name="nombre" placeholder="Nombre" required>
+        <input type="text" name="tipoDocumento" placeholder="Tipo" required>
+        <input type="text" name="link" placeholder="Link" required>
+        <button type="submit">Agregar</button>
+      </form>
+      <table id="anexosTable">
+        <thead>
+          <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario</th><th>Acciones</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
   </div>
 
   <script src="./js/app.js"></script>
   <script>
-    // Renderizar módulo y tabla + formulario
-    async function selectModule(tipo) {
-      const title = document.getElementById("moduleTitle");
-      const container = document.getElementById("moduleContainer");
-      title.textContent = tipo.charAt(0).toUpperCase() + tipo.slice(1);
-
-      try {
-        const items = await getItems(tipo);
-
-        // Tabla
-        let html = `<table>
-                      <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Tipo</th>
-                        <th>Link</th>
-                        <th>QR</th>
-                        <th>Usuario</th>
-                        <th>Fecha</th>
-                        <th>Visitas</th>
-                        <th>Acciones</th>
-                      </tr>`;
-        items.forEach(item => {
-          const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
-          html += `<tr>
-                    <td>${item[idKey]}</td>
-                    <td>${item.Nombre}</td>
-                    <td>${item.Tipo}</td>
-                    <td><a href="${item.Link}" target="_blank">Ver</a></td>
-                    <td><img src="${item["QR Online"]}" width="50"/></td>
-                    <td>${item["Usuario Crea"]}</td>
-                    <td>${item["Fecha Creado"]}</td>
-                    <td>${item.VisitasTotales}</td>
-                    <td>
-                      <button onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
-                      <button onclick="deleteItem('${tipo}', '${item[idKey]}')">Eliminar</button>
-                    </td>
-                  </tr>`;
-        });
-        html += `</table>`;
-
-        // Formulario de registro
-        html += `<form id="form${tipo}">
-                    <h3>Agregar nuevo ${tipo.slice(0, -1)}</h3>
-                    <input type="text" name="nombre" placeholder="Nombre" required>
-                    <input type="text" name="tipoDocumento" placeholder="Tipo" required>
-                    <input type="file" name="archivo" required>
-                    <button type="submit">Guardar</button>
-                 </form>`;
-
-        container.innerHTML = html;
-
-        // Manejar submit del formulario
-        document.getElementById(`form${tipo}`).addEventListener('submit', async e => {
-          e.preventDefault();
-          const form = e.target;
-          const nombre = form.nombre.value.trim();
-          const tipoDocumento = form.tipoDocumento.value.trim();
-          const archivo = form.archivo.files[0];
-
-          if(!archivo) return alert("Seleccione un archivo");
-
-          // Subir archivo a Drive y obtener link
-          const formData = new FormData();
-          formData.append("archivo", archivo);
-
-          // Para simplificar, puedes subir archivo a Drive desde Apps Script si lo implementas.
-          // Por ahora asumimos que obtenemos un 'link' para guardarlo
-          const link = `https://drive.google.com/placeholder/${archivo.name}`;
-
-          try {
-            await createItem(tipo.toLowerCase(), nombre, tipoDocumento, link);
-            alert("Registrado correctamente");
-            selectModule(tipo); // recarga el módulo
-          } catch(err) {
-            alert("Error al guardar: " + err.message);
-          }
-        });
-
-      } catch (error) {
-        console.error("Error al cargar el módulo:", error);
-        container.innerHTML = "<p>Error al cargar los datos del panel.</p>";
-      }
+    // Mostrar módulo
+    function showModule(tipo) {
+      document.querySelectorAll('.module').forEach(m => m.style.display = 'none');
+      const mod = document.getElementById(tipo + 'Module');
+      if(mod) mod.style.display = 'block';
+      loadModuleData(tipo);
     }
 
-    // Inicializar sesión
-    document.addEventListener('DOMContentLoaded', async () => {
-      let user = null;
-      try { user = JSON.parse(localStorage.getItem('usuario')); } catch(e) { localStorage.removeItem('usuario'); }
-      if(!user || user.TipoUsuario.trim().toLowerCase() !== "admin") { window.location.href="index.html"; return; }
-    });
-  </script>
+    // Cargar datos
+    async function loadModuleData(tipo) {
+      const items = await getItems(tipo);
+      const tableBody = document.getElementById(tipo + 'Table').querySelector('tbody');
+      tableBody.innerHTML = '';
+      items.forEach(item => {
+        const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item[idKey]}</td>
+          <td>${item.Nombre}</td>
+          <td>${item.Tipo}</td>
+          <td><a href="${item.Link}" target="_blank">Ver</a></td>
+          <td><a href="${item["QR Online"]}" target="_blank">QR</a></td>
+          <td>${item["Usuario Crea"]}</td>
+          <td>
+            <button onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
+            <button onclick="deleteItem('${tipo}', '${item[idKey]}')">Eliminar</button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
 
+    // Agregar registro
+    async function addItem(event, tipo){
+      event.preventDefault();
+      const form = event.target;
+      const nombre = form.nombre.value;
+      const tipoDocumento = form.tipoDocumento.value;
+      const link = form.link.value;
+
+      try{
+        await createItem(tipo, nombre, tipoDocumento, link);
+        form.reset();
+        loadModuleData(tipo);
+      }catch(e){
+        alert("Error al agregar item: " + e.message);
+      }
+    }
+  </script>
 </body>
 </html>
