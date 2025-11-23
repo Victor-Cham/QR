@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="./css/styles.css">
   <title>Login</title>
+  <link rel="stylesheet" href="./css/styles.css">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -60,15 +60,14 @@
   </div>
 
   <script src="./js/app.js"></script>
-
   <script>
-    // Verificación segura de sesión al cargar la página
     document.addEventListener('DOMContentLoaded', () => {
+      // Si ya hay sesión activa, redirigir según rol
       try {
         const usuarioStr = localStorage.getItem('usuario');
-        if (usuarioStr) {
+        if(usuarioStr) {
           const usuario = JSON.parse(usuarioStr);
-          if (usuario && usuario.TipoUsuario) {
+          if(usuario && usuario.TipoUsuario) {
             const tipo = usuario.TipoUsuario.trim().toLowerCase();
             switch(tipo) {
               case "superadmin": window.location.href = "superadmin.html"; break;
@@ -77,12 +76,19 @@
             }
           }
         }
-      } catch (error) {
-        console.error("Error leyendo la sesión:", error);
-        localStorage.removeItem('usuario'); // Limpiamos sesión corrupta
+      } catch(e) {
+        localStorage.removeItem('usuario');
       }
+
+      // Asociar login al form
+      const form = document.getElementById('loginForm');
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const usuario = document.getElementById('usuario').value.trim();
+        const contrasena = document.getElementById('contrasena').value.trim();
+        login(usuario, contrasena);
+      });
     });
   </script>
-
 </body>
 </html>
