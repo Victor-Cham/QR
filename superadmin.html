@@ -5,25 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SuperAdmin - Dashboard</title>
   <link rel="stylesheet" href="./css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f8; margin:0; }
     header { background: #007bff; color: white; padding: 1rem; text-align: center; position: relative; }
     header h1 { margin:0; }
-    header button { position: absolute; top: 1rem; right: 1rem; background: #dc3545; border: none; padding: 0.5rem 1rem; color: white; border-radius:6px; cursor:pointer;}
-    header button:hover { background:#c82333;}
-    main { padding:2rem; max-width: 800px; margin:auto; }
-    .stats { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-around; }
+    header button { position: absolute; top: 1rem; right: 1rem; background: #dc3545; border: none; padding: 0.5rem 1rem; color: white; border-radius:6px; cursor:pointer; }
+    header button:hover { background:#c82333; }
+    main { padding:2rem; max-width: 1000px; margin:auto; }
+    .stats { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-around; margin-bottom: 2rem; }
     .card { flex:1 1 200px; background:white; padding:1rem; border-radius:8px; box-shadow:0 5px 15px rgba(0,0,0,0.1); text-align:center; }
     .card h3 { margin:0.5rem 0; color:#007bff; font-size:1.5rem; }
     .card p { margin:0; color:#333; font-size:1rem; }
+    section { margin-bottom: 3rem; text-align:center; }
+    section h2 { margin-bottom: 1rem; color:#333; }
+    canvas { background:white; border-radius:8px; box-shadow:0 5px 15px rgba(0,0,0,0.1); padding: 1rem; }
   </style>
 </head>
 <body>
+
   <header>
     <h1>Dashboard SuperAdmin</h1>
     <button onclick="logout()">Cerrar sesión</button>
   </header>
+
   <main>
     <div class="stats">
       <div class="card">
@@ -43,6 +49,16 @@
         <h3 id="anexosCount">0</h3>
       </div>
     </div>
+
+    <section>
+      <h2>Estadísticas de Documentos y Anexos</h2>
+      <canvas id="barChart" style="max-width:800px;margin:auto;"></canvas>
+    </section>
+
+    <section>
+      <h2>Distribución de Tipos de Contenido</h2>
+      <canvas id="pieChart" style="max-width:600px;margin:auto;"></canvas>
+    </section>
   </main>
 
   <script src="./js/app.js"></script>
@@ -54,17 +70,52 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       try {
+        // Obtenemos estadísticas de app.js
         const stats = await getStats();
         document.getElementById('usuariosCount').textContent = stats.usuarios;
         document.getElementById('comunicadosCount').textContent = stats.comunicados;
         document.getElementById('documentosCount').textContent = stats.documentos;
         document.getElementById('anexosCount').textContent = stats.anexos;
+
+        // Gráfico de barras
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        new Chart(barCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Comunicados', 'Documentos', 'Anexos'],
+            datasets: [{
+              label: 'Cantidad de Items',
+              data: [stats.comunicados, stats.documentos, stats.anexos],
+              backgroundColor: ['#007bff', '#28a745', '#ffc107']
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+
+        // Gráfico de pastel
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        new Chart(pieCtx, {
+          type: 'pie',
+          data: {
+            labels: ['Comunicados', 'Documentos', 'Anexos'],
+            datasets: [{
+              data: [stats.comunicados, stats.documentos, stats.anexos],
+              backgroundColor: ['#007bff', '#28a745', '#ffc107']
+            }]
+          },
+          options: { responsive: true }
+        });
+
       } catch (error) {
         console.error(error);
-        alert("Error al cargar estadísticas");
+        alert("Error al cargar estadísticas y gráficos");
       }
     });
   </script>
+
 </body>
 </html>
-
