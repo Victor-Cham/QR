@@ -3,103 +3,159 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel</title>
+  <title>Panel Admin</title>
   <link rel="stylesheet" href="./css/styles.css">
+
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; }
-    header { background: #28a745; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { margin: 0; font-size: 1.5rem; }
-    header button { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; background: #ff4b5c; color: white; }
-    main { padding: 2rem; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-    th { background: #e9ecef; }
-    button.crud { padding: 0.3rem 0.5rem; margin-right: 0.3rem; border: none; border-radius: 3px; cursor: pointer; }
-    button.edit { background: #ffc107; color: white; }
-    button.delete { background: #dc3545; color: white; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { color: #333; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f2f2f2; }
+    button { padding: 5px 10px; margin-right: 5px; cursor: pointer; }
+    .container { margin-bottom: 40px; }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>Admin Panel</h1>
+  <h1>Panel de Administración</h1>
   <button onclick="logout()">Cerrar Sesión</button>
-</header>
 
-<main>
-  <h2>Comunicados</h2>
-  <table id="tableComunicados">
-    <thead>
-      <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario</th><th>Acciones</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="container">
+    <h2>Comunicados</h2>
+    <div id="comunicadosContainer"></div>
+  </div>
 
-  <h2>Documentos</h2>
-  <table id="tableDocumentos">
-    <thead>
-      <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario</th><th>Acciones</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="container">
+    <h2>Documentos</h2>
+    <div id="documentosContainer"></div>
+  </div>
 
-  <h2>Anexos</h2>
-  <table id="tableAnexos">
-    <thead>
-      <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario</th><th>Acciones</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</main>
+  <div class="container">
+    <h2>Anexos</h2>
+    <div id="anexosContainer"></div>
+  </div>
 
-<script src="./js/app.js"></script>
-<script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    let user = null;
-    try {
-      user = JSON.parse(localStorage.getItem('usuario'));
-    } catch(e) { localStorage.removeItem('usuario'); }
-    if(!user || user.TipoUsuario.trim().toLowerCase() !== 'admin') {
-      window.location.href = "index.html";
-      return;
+  <script src="./js/app.js"></script>
+  <script>
+    /************************************************************
+     * Renderizar tabla con botones CRUD
+     ************************************************************/
+    function renderTable(containerId, items, tipo) {
+      const container = document.getElementById(containerId);
+      if(!container) return;
+
+      let html = `<table>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Tipo</th>
+                      <th>Link</th>
+                      <th>QR</th>
+                      <th>Usuario</th>
+                      <th>Fecha</th>
+                      <th>Visitas</th>
+                      <th>Acciones</th>
+                    </tr>`;
+
+      items.forEach(item => {
+        const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
+        html += `<tr>
+                  <td>${item[idKey]}</td>
+                  <td>${item.Nombre}</td>
+                  <td>${item.Tipo}</td>
+                  <td><a href="${item.Link}" target="_blank">Ver</a></td>
+                  <td><img src="${item["QR Online"]}" width="50"/></td>
+                  <td>${item["Usuario Crea"]}</td>
+                  <td>${item["Fecha Creado"]}</td>
+                  <td>${item.VisitasTotales}</td>
+                  <td>
+                    <button onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
+                    <button onclick="deleteItem('${tipo}', '${item[idKey]}')">Eliminar</button>
+                  </td>
+                </tr>`;
+      });
+
+      html += `</table>`;
+      container.innerHTML = html;
     }
 
-    try {
-      const comunicados = await getItems("comunicados");
-      const documentos = await getItems("documentos");
-      const anexos = await getItems("anexos");
+    /************************************************************
+     * Editar item
+     ************************************************************/
+    async function editItem(tipo, id) {
+      const nombre = prompt("Ingrese nuevo nombre:");
+      const tipoDocumento = prompt("Ingrese nuevo tipo:");
+      const link = prompt("Ingrese nuevo link:");
 
-      function renderTable(items, tableId) {
-        const tbody = document.getElementById(tableId).querySelector("tbody");
-        tbody.innerHTML = "";
-        items.forEach(item => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${item.ComunicadoID || item.DocumentoID || item.AnexoID}</td>
-            <td>${item.Nombre}</td>
-            <td>${item.Tipo}</td>
-            <td><a href="${item.Link}" target="_blank">Ver</a></td>
-            <td><a href="${item["QR Online"]}" target="_blank">QR</a></td>
-            <td>${item["Usuario Crea"]}</td>
-            <td>
-              <button class="crud edit" onclick="alert('Editar ${item.Nombre}')">Editar</button>
-              <button class="crud delete" onclick="alert('Eliminar ${item.Nombre}')">Eliminar</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
+      if(nombre && tipoDocumento && link) {
+        try {
+          await updateItem(tipo.toLowerCase(), id, nombre, tipoDocumento, link);
+          alert("Actualizado correctamente");
+          location.reload();
+        } catch (error) {
+          alert("Error al actualizar: " + error.message);
+        }
+      }
+    }
+
+    /************************************************************
+     * Eliminar item
+     ************************************************************/
+    async function deleteItemHandler(tipo, id) {
+      if(confirm("¿Desea eliminar este registro?")) {
+        try {
+          await deleteItem(tipo.toLowerCase(), id);
+          alert("Eliminado correctamente");
+          location.reload();
+        } catch(error) {
+          alert("Error al eliminar: " + error.message);
+        }
+      }
+    }
+
+    // Alias para los botones de eliminar
+    window.deleteItem = deleteItemHandler;
+
+    /************************************************************
+     * Inicializar datos de Admin
+     ************************************************************/
+    document.addEventListener('DOMContentLoaded', async () => {
+      let user = null;
+      try {
+        const usuarioStr = localStorage.getItem('usuario');
+        if(usuarioStr) user = JSON.parse(usuarioStr);
+      } catch(e) {
+        console.error("Error parseando sesión:", e);
+        localStorage.removeItem('usuario');
       }
 
-      renderTable(comunicados, "tableComunicados");
-      renderTable(documentos, "tableDocumentos");
-      renderTable(anexos, "tableAnexos");
+      if(!user) {
+        window.location.href = "index.html";
+        return;
+      }
 
-    } catch(err) {
-      console.error(err);
-      alert("Error al cargar los datos en el panel de admin.");
-    }
-  });
-</script>
+      const tipo = user.TipoUsuario?.trim().toLowerCase() || "";
+      if(tipo !== "admin") {
+        alert("No tiene permisos para acceder");
+        window.location.href = "index.html";
+        return;
+      }
+
+      try {
+        const comunicados = await getItems("comunicados");
+        const documentos = await getItems("documentos");
+        const anexos = await getItems("anexos");
+
+        renderTable("comunicadosContainer", comunicados, "Comunicado");
+        renderTable("documentosContainer", documentos, "Documento");
+        renderTable("anexosContainer", anexos, "Anexo");
+      } catch (error) {
+        console.error("Error al cargar datos en el panel de admin:", error);
+        alert("Error al cargar los datos en el panel de admin.");
+      }
+    });
+  </script>
 
 </body>
 </html>
