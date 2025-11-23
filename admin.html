@@ -54,7 +54,6 @@
     </header>
 
     <div class="content">
-      <!-- Formulario para agregar registro -->
       <div class="add-form">
         <h3>Agregar nuevo registro</h3>
         <form id="addForm">
@@ -71,10 +70,7 @@
         </form>
       </div>
 
-      <!-- Buscador -->
       <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre..." oninput="filterTable()">
-
-      <!-- Contenedor para la tabla -->
       <div id="moduleContainer"></div>
     </div>
   </div>
@@ -82,6 +78,7 @@
   <script src="./js/app.js"></script>
   <script>
     let currentModule = 'comunicados';
+    let allItems = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
       let user = null;
@@ -96,7 +93,6 @@
       await loadModule(currentModule);
     });
 
-    // Manejar envío de formulario
     document.getElementById("addForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const nombre = document.getElementById("nombre").value.trim();
