@@ -90,6 +90,7 @@ async function uploadItem(tipo, nombre, tipoDocumento, archivo) {
     const resp = await fetch(API_URL, { method: "POST", body: formData });
     const data = await resp.json();
     if (!data.success) throw new Error(data.message || "Error al subir el archivo");
+
     alert("Archivo subido correctamente. ID: " + data.id);
     await loadModule(tipo);
   } catch (err) {
