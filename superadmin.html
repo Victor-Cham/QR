@@ -27,7 +27,7 @@
 
   <header>
     <h1>Dashboard SuperAdmin</h1>
-    <button onclick="logout()">Cerrar sesión</button>
+    <button type="button" onclick="logout()">Cerrar sesión</button>
   </header>
 
   <main>
@@ -63,15 +63,23 @@
 
   <script src="./js/app.js"></script>
   <script>
-    function logout() {
-      localStorage.removeItem('usuario');
-      window.location.href = "index.html";
-    }
-
+    // Verificación de sesión al cargar
     document.addEventListener('DOMContentLoaded', async () => {
+      const usuario = JSON.parse(localStorage.getItem('usuario'));
+      if (!usuario || usuario.TipoUsuario.trim().toLowerCase() !== 'superadmin') {
+        window.location.href = 'index.html'; // Redirige si no hay sesión válida
+        return;
+      }
+
+      // Logout
+      window.logout = function() {
+        localStorage.removeItem('usuario');
+        window.location.href = 'index.html';
+      };
+
+      // Cargar estadísticas y gráficos
       try {
-        // Obtenemos estadísticas de app.js
-        const stats = await getStats();
+        const stats = await getStats(); // Debe estar definida en app.js
         document.getElementById('usuariosCount').textContent = stats.usuarios;
         document.getElementById('comunicadosCount').textContent = stats.comunicados;
         document.getElementById('documentosCount').textContent = stats.documentos;
