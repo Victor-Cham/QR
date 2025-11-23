@@ -59,22 +59,28 @@
     </form>
   </div>
 
-  <!-- Solo importamos app.js para manejar login -->
   <script src="./js/app.js"></script>
 
   <script>
-    // Verificar si ya hay usuario logueado y redirigir
+    // Verificación segura de sesión al cargar la página
     document.addEventListener('DOMContentLoaded', () => {
-      const usuario = JSON.parse(localStorage.getItem('usuario'));
-      if (usuario) {
-        const tipo = usuario.TipoUsuario.trim().toLowerCase();
-        switch(tipo) {
-          case "superadmin": window.location.href = "superadmin.html"; break;
-          case "admin": window.location.href = "admin.html"; break;
-          case "usuario": window.location.href = "usuario.html"; break;
+      try {
+        const usuarioStr = localStorage.getItem('usuario');
+        if (usuarioStr) {
+          const usuario = JSON.parse(usuarioStr);
+          if (usuario && usuario.TipoUsuario) {
+            const tipo = usuario.TipoUsuario.trim().toLowerCase();
+            switch(tipo) {
+              case "superadmin": window.location.href = "superadmin.html"; break;
+              case "admin": window.location.href = "admin.html"; break;
+              case "usuario": window.location.href = "usuario.html"; break;
+            }
+          }
         }
+      } catch (error) {
+        console.error("Error leyendo la sesión:", error);
+        localStorage.removeItem('usuario'); // Limpiamos sesión corrupta
       }
-      // NOTA: La captura del formulario ya está en app.js, no se repite aquí
     });
   </script>
 
