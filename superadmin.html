@@ -1,239 +1,43 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Super Admin - Dashboard</title>
-<link rel="stylesheet" href="css/styles.css">
-<style>
-body { font-family: 'Segoe UI', sans-serif; margin:0; background:#f4f6f8; }
-header { background:#4e54c8; color:#fff; padding:15px; display:flex; justify-content: space-between; align-items:center; }
-header h1 { font-size: 20px; }
-header button { padding:8px 12px; border:none; border-radius:5px; cursor:pointer; background:#fff; color:#4e54c8; font-weight:bold; }
-main { padding:20px; display:flex; flex-wrap: wrap; gap:20px; }
-.card { background:#fff; padding:20px; border-radius:10px; box-shadow:0px 5px 15px rgba(0,0,0,0.1); flex:1 1 300px; min-width:250px; }
-.card h2 { font-size:18px; margin-bottom:10px; color:#333; }
-.card table { width:100%; border-collapse: collapse; }
-.card table th, .card table td { padding:8px; text-align:left; border-bottom:1px solid #ccc; }
-.card form { display:flex; flex-direction: column; gap:10px; }
-.card input, .card select, .card button { padding:8px; border-radius:5px; border:1px solid #ccc; }
-.card button { background:#4e54c8; color:#fff; border:none; cursor:pointer; font-weight:bold; }
-.card button:hover { opacity:0.9; }
-</style>
+  <meta charset="UTF-8">
+  <title>SuperAdmin - Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-
-<header>
-  <h1>Super Admin Dashboard</h1>
+  <h1>Dashboard SuperAdmin</h1>
   <button onclick="logout()">Cerrar sesión</button>
-</header>
 
-<main>
-  <!-- Personas -->
-  <div class="card">
-    <h2>Gestionar Personas</h2>
-    <table id="personasTable">
-      <tr><th>ID</th><th>DNI</th><th>Apellidos</th><th>Nombre</th><th>Colaborador</th><th>Celular</th><th>Email</th><th>Tipo Usuario</th><th>Acciones</th></tr>
-    </table>
-    <h3>Agregar Persona</h3>
-    <form id="addPersonaForm">
-      <input type="text" placeholder="DNI" id="personaDNI" required>
-      <input type="text" placeholder="Apellidos" id="personaApellidos" required>
-      <input type="text" placeholder="Nombre" id="personaNombre" required>
-      <input type="text" placeholder="Celular" id="personaCelular">
-      <input type="email" placeholder="Email" id="personaEmail">
-      <select id="personaTipo">
-        <option value="Usuario">Usuario</option>
-        <option value="Admin">Admin</option>
-      </select>
-      <button type="submit">Agregar Persona</button>
-    </form>
+  <div>
+    <h2>Estadísticas Generales</h2>
+    <ul>
+      <li id="usuariosCount">Usuarios: 0</li>
+      <li id="comunicadosCount">Comunicados: 0</li>
+      <li id="documentosCount">Documentos: 0</li>
+      <li id="anexosCount">Anexos: 0</li>
+    </ul>
   </div>
 
-  <!-- Documentos -->
-  <div class="card">
-    <h2>Documentos</h2>
-    <table id="docsTable">
-      <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>Visitas</th><th>Acciones</th></tr>
-    </table>
-    <h3>Agregar Documento</h3>
-    <form id="addDocForm">
-      <input type="text" placeholder="Nombre" id="docNombre" required>
-      <input type="text" placeholder="Tipo" id="docTipo" required>
-      <input type="url" placeholder="Link" id="docLink" required>
-      <button type="submit">Agregar Documento</button>
-    </form>
-  </div>
+  <script src="js/app.js"></script>
+  <script>
+    function logout() {
+      localStorage.removeItem('usuario');
+      window.location.href = "index.html";
+    }
 
-  <!-- Comunicados -->
-  <div class="card">
-    <h2>Comunicados</h2>
-    <table id="comsTable">
-      <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>Acciones</th></tr>
-    </table>
-    <h3>Agregar Comunicado</h3>
-    <form id="addComForm">
-      <input type="text" placeholder="Nombre" id="comNombre" required>
-      <input type="text" placeholder="Tipo" id="comTipo" required>
-      <input type="url" placeholder="Link" id="comLink" required>
-      <button type="submit">Agregar Comunicado</button>
-    </form>
-  </div>
-</main>
-
-<script>
-// Sesión
-const usuario = JSON.parse(localStorage.getItem('usuario'));
-if(!usuario || usuario.TipoUsuario.trim().toLowerCase() !== "superadmin") {
-  alert("Acceso denegado");
-  window.location.href="index.html";
-}
-
-
-function logout(){
-  localStorage.removeItem('usuario');
-  window.location.href="index.html";
-}
-
-// Funciones API
-async function fetchSheet(sheet){
-  const res = await fetch(`https://script.google.com/macros/s/.../exec?sheet=${sheet}`);
-  return await res.json();
-}
-
-async function postSheet(data){
-  await fetch(`https://script.google.com/macros/s/.../exec`, {
-    method:'POST',
-    body: JSON.stringify(data)
-  });
-}
-
-// Cargar Personas
-async function cargarPersonas(){
-  const data = await fetchSheet('Personas');
-  const table = document.getElementById('personasTable');
-  table.innerHTML = '<tr><th>ID</th><th>DNI</th><th>Apellidos</th><th>Nombre</th><th>Colaborador</th><th>Celular</th><th>Email</th><th>Tipo Usuario</th><th>Acciones</th></tr>';
-  data.forEach(p=>{
-    const row = table.insertRow();
-    row.insertCell(0).innerText = p.UsuarioID;
-    row.insertCell(1).innerText = p.DNI;
-    row.insertCell(2).innerText = p.Apellidos;
-    row.insertCell(3).innerText = p.Nombre;
-    row.insertCell(4).innerText = p.Colaborador;
-    row.insertCell(5).innerText = p.Celular;
-    row.insertCell(6).innerText = p.Email;
-    row.insertCell(7).innerText = p.TipoUsuario;
-    row.insertCell(8).innerHTML = `<button onclick="eliminarPersona('${p.UsuarioID}')">Eliminar</button>`;
-  });
-}
-
-// Agregar Persona
-document.getElementById('addPersonaForm').addEventListener('submit', async e=>{
-  e.preventDefault();
-  const newPersona = {
-    DNI: document.getElementById('personaDNI').value,
-    Apellidos: document.getElementById('personaApellidos').value,
-    Nombre: document.getElementById('personaNombre').value,
-    Colaborador: document.getElementById('personaNombre').value + " " + document.getElementById('personaApellidos').value,
-    Celular: document.getElementById('personaCelular').value,
-    Email: document.getElementById('personaEmail').value,
-    TipoUsuario: document.getElementById('personaTipo').value,
-    FechaCreado: new Date().toISOString()
-  };
-  await postSheet({accion:'agregar', sheet:'Personas', data:newPersona});
-  alert('Persona agregada');
-  cargarPersonas();
-});
-
-// Eliminar Persona
-async function eliminarPersona(id){
-  if(confirm('Eliminar esta persona?')){
-    await postSheet({accion:'eliminar', sheet:'Personas', UsuarioID:id});
-    cargarPersonas();
-  }
-}
-
-// Cargar Documentos
-async function cargarDocumentos(){
-  const data = await fetchSheet('Documentos');
-  const table = document.getElementById('docsTable');
-  table.innerHTML = '<tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>Visitas</th><th>Acciones</th></tr>';
-  data.forEach(d=>{
-    const row = table.insertRow();
-    row.insertCell(0).innerText=d.DocumentoID;
-    row.insertCell(1).innerText=d.Nombre;
-    row.insertCell(2).innerText=d.Tipo;
-    row.insertCell(3).innerHTML=`<a href="${d.Link}" target="_blank">Abrir</a>`;
-    row.insertCell(4).innerText=d.Visitas || 0;
-    row.insertCell(5).innerHTML=`<button onclick="eliminarDocumento('${d.DocumentoID}')">Eliminar</button>`;
-  });
-}
-
-// Agregar Documento
-document.getElementById('addDocForm').addEventListener('submit', async e=>{
-  e.preventDefault();
-  const newDoc = {
-    Nombre: document.getElementById('docNombre').value,
-    Tipo: document.getElementById('docTipo').value,
-    Link: document.getElementById('docLink').value,
-    UsuarioCrea: usuario.UsuarioID,
-    FechaCreado: new Date().toISOString()
-  };
-  await postSheet({accion:'agregar', sheet:'Documentos', data:newDoc});
-  alert('Documento agregado');
-  cargarDocumentos();
-});
-
-async function eliminarDocumento(id){
-  if(confirm('Eliminar documento?')){
-    await postSheet({accion:'eliminar', sheet:'Documentos', DocumentoID:id});
-    cargarDocumentos();
-  }
-}
-
-// Cargar Comunicados
-async function cargarComunicados(){
-  const data = await fetchSheet('Comunicados');
-  const table = document.getElementById('comsTable');
-  table.innerHTML = '<tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>Acciones</th></tr>';
-  data.forEach(c=>{
-    const row = table.insertRow();
-    row.insertCell(0).innerText=c.ComunicadoID;
-    row.insertCell(1).innerText=c.Nombre;
-    row.insertCell(2).innerText=c.Tipo;
-    row.insertCell(3).innerHTML=`<a href="${c.Link}" target="_blank">Abrir</a>`;
-    row.insertCell(4).innerHTML=`<button onclick="eliminarComunicado('${c.ComunicadoID}')">Eliminar</button>`;
-  });
-}
-
-// Agregar Comunicado
-document.getElementById('addComForm').addEventListener('submit', async e=>{
-  e.preventDefault();
-  const newCom = {
-    Nombre: document.getElementById('comNombre').value,
-    Tipo: document.getElementById('comTipo').value,
-    Link: document.getElementById('comLink').value,
-    UsuarioCrea: usuario.UsuarioID,
-    FechaCreado: new Date().toISOString()
-  };
-  await postSheet({accion:'agregar', sheet:'Comunicados', data:newCom});
-  alert('Comunicado agregado');
-  cargarComunicados();
-});
-
-async function eliminarComunicado(id){
-  if(confirm('Eliminar comunicado?')){
-    await postSheet({accion:'eliminar', sheet:'Comunicados', ComunicadoID:id});
-    cargarComunicados();
-  }
-}
-
-// Inicializar
-cargarPersonas();
-cargarDocumentos();
-cargarComunicados();
-</script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const stats = await getStats();
+        document.getElementById('usuariosCount').textContent = `Usuarios: ${stats.usuarios}`;
+        document.getElementById('comunicadosCount').textContent = `Comunicados: ${stats.comunicados}`;
+        document.getElementById('documentosCount').textContent = `Documentos: ${stats.documentos}`;
+        document.getElementById('anexosCount').textContent = `Anexos: ${stats.anexos}`;
+      } catch (error) {
+        alert("Error al cargar estadísticas");
+        console.error(error);
+      }
+    });
+  </script>
 </body>
 </html>
-
-
