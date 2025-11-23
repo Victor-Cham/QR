@@ -14,35 +14,25 @@ async function login(usuario, contrasena) {
     return;
   }
 
-  console.log("Intento de login:", usuario);
-
   try {
     const response = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`);
     const result = await response.json();
-
-    console.log("Respuesta login:", result);
 
     if (!result.success) {
       alert(result.message || "Usuario o contraseña incorrecta");
       return;
     }
 
-    // Guardar usuario en localStorage
     localStorage.setItem('usuario', JSON.stringify(result.usuario));
 
-    // Validar tipo de usuario
     const tipo = (result.usuario.TipoUsuario || "").trim().toLowerCase();
-
     switch (tipo) {
       case "superadmin":
-        window.location.href = "superadmin.html";
-        break;
+        window.location.href = "superadmin.html"; break;
       case "admin":
-        window.location.href = "admin.html";
-        break;
+        window.location.href = "admin.html"; break;
       case "usuario":
-        window.location.href = "usuario.html";
-        break;
+        window.location.href = "usuario.html"; break;
       default:
         alert("Tipo de usuario no válido, revise la hoja PERSONAS");
         localStorage.removeItem('usuario');
@@ -77,18 +67,26 @@ async function getItems(tipo) {
   }
 }
 
-async function createItem(tipo, nombre, tipoDocumento, link) {
+// NUEVO: Subir archivo y registrar en Sheet
+async function uploadItem(tipo, nombre, tipoDocumento, archivo) {
   const usuario = JSON.parse(localStorage.getItem('usuario') || "{}").DNI || "";
-  const body = new URLSearchParams({ action: "createItem", tipo, nombre, tipoDocumento, link, usuario });
 
-  const resp = await fetch(API_URL, { method: "POST", body });
+  const formData = new FormData();
+  formData.append("action", "uploadItem");
+  formData.append("tipo", tipo);
+  formData.append("nombre", nombre);
+  formData.append("tipoDocumento", tipoDocumento);
+  formData.append("usuario", usuario);
+  formData.append("archivo", archivo);
+
+  const resp = await fetch(API_URL, { method: "POST", body: formData });
   const data = await resp.json();
-  if (!data.success) throw new Error(data.message || "Error al crear item");
+  if (!data.success) throw new Error(data.message || "Error al subir el archivo");
   return data.id;
 }
 
-async function updateItem(tipo, id, nombre, tipoDocumento, link) {
-  const body = new URLSearchParams({ action: "updateItem", tipo, id, nombre, tipoDocumento, link });
+async function updateItem(tipo, id, nombre, tipoDocumento) {
+  const body = new URLSearchParams({ action: "updateItem", tipo, id, nombre, tipoDocumento });
   const resp = await fetch(API_URL, { method: "POST", body });
   const data = await resp.json();
   if (!data.success) throw new Error(data.message || "Error al actualizar item");
@@ -110,7 +108,7 @@ function renderTable(tipo, items) {
   const container = document.getElementById('moduleContainer');
   if (!container) return;
 
-  if (items.length === 0) {
+  if (!items.length) {
     container.innerHTML = "<p>No hay registros.</p>";
     return;
   }
@@ -121,34 +119,32 @@ function renderTable(tipo, items) {
                     <th>ID</th>
                     <th>Nombre</th>
                     <th>Tipo</th>
-                    <th>Link</th>
+                    <th>Archivo</th>
                     <th>QR</th>
                     <th>Usuario</th>
                     <th>Fecha</th>
-                    <th>Visitas</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>`;
-
   container.innerHTML = html;
-  const tbody = container.querySelector("tbody");
 
+  const tbody = container.querySelector("tbody");
   items.forEach(item => {
     const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
       <td>${item[idKey]}</td>
       <td>${item.Nombre}</td>
       <td>${item.Tipo}</td>
-      <td><a href="${item.Link}" target="_blank">Ver</a></td>
+      <td><a href="${item.Link}" target="_blank">Ver Archivo</a></td>
       <td><a href="${item["QR Online"]}" target="_blank">QR</a></td>
       <td>${item["Usuario Crea"]}</td>
       <td>${item["Fecha Creado"]}</td>
-      <td>${item.VisitasTotales}</td>
       <td>
-        <button class="crud-btn edit" onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
+        <button class="crud-btn edit" onclick="editItemHandler('${tipo}', '${item[idKey]}')">Editar</button>
         <button class="crud-btn delete" onclick="deleteItemHandler('${tipo}', '${item[idKey]}')">Eliminar</button>
       </td>
     `;
@@ -174,31 +170,13 @@ function filterTable() {
 /************************************************************
  *                  CRUD HANDLERS
  ************************************************************/
-async function addItem() {
-  const nombre = prompt("Ingrese nombre:");
-  const tipoDocumento = prompt("Ingrese tipo:");
-  const link = prompt("Ingrese link:");
-
-  if (!nombre || !tipoDocumento || !link) return;
-
-  try {
-    await createItem(currentModule, nombre, tipoDocumento, link);
-    alert("Registro agregado correctamente");
-    await loadModule(currentModule);
-  } catch (err) {
-    alert("Error al agregar item: " + err.message);
-  }
-}
-
-async function editItem(tipo, id) {
+async function editItemHandler(tipo, id) {
   const nombre = prompt("Ingrese nuevo nombre:");
   const tipoDocumento = prompt("Ingrese nuevo tipo:");
-  const link = prompt("Ingrese nuevo link:");
 
-  if (!nombre || !tipoDocumento || !link) return;
-
+  if (!nombre || !tipoDocumento) return;
   try {
-    await updateItem(tipo, id, nombre, tipoDocumento, link);
+    await updateItem(tipo, id, nombre, tipoDocumento);
     await loadModule(tipo);
   } catch (err) {
     alert("Error al actualizar: " + err.message);
@@ -207,7 +185,6 @@ async function editItem(tipo, id) {
 
 async function deleteItemHandler(tipo, id) {
   if (!confirm("¿Desea eliminar este registro?")) return;
-
   try {
     await deleteItem(tipo, id);
     await loadModule(tipo);
@@ -236,28 +213,15 @@ async function loadModule(module) {
  ************************************************************/
 document.addEventListener('DOMContentLoaded', async () => {
   let user = null;
-  try {
-    const usuarioStr = localStorage.getItem('usuario');
-    if (usuarioStr) user = JSON.parse(usuarioStr);
-  } catch (e) {
-    localStorage.removeItem('usuario');
-  }
+  try { user = JSON.parse(localStorage.getItem('usuario')); } 
+  catch(e){ localStorage.removeItem('usuario'); }
 
-  if (!user) return; // no hay sesión activa
+  if (!user) return window.location.href = "index.html";
 
-  const tipo = (user.TipoUsuario || "").trim().toLowerCase();
   document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
 
-  if (tipo === "admin") {
-    await loadModule('comunicados');
-  } else if (tipo === "superadmin") {
-    await loadModule('comunicados');
-  } else if (tipo === "usuario") {
-    await loadModule('comunicados'); // si quieres módulo distinto para usuario, cámbialo
-  } else {
-    alert("Tipo de usuario no válido");
-    logout();
-  }
+  const tipo = (user.TipoUsuario || "").trim().toLowerCase();
+  await loadModule('comunicados');
 });
 
 /************************************************************
@@ -265,11 +229,8 @@ document.addEventListener('DOMContentLoaded', async () => {
  ************************************************************/
 window.login = login;
 window.logout = logout;
-window.getItems = getItems;
-window.createItem = createItem;
-window.updateItem = updateItem;
-window.deleteItemHandler = deleteItemHandler;
-window.addItem = addItem;
-window.editItem = editItem;
 window.loadModule = loadModule;
 window.filterTable = filterTable;
+window.uploadItem = uploadItem;
+window.editItemHandler = editItemHandler;
+window.deleteItemHandler = deleteItemHandler;
