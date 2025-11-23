@@ -1,11 +1,18 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzt77BLIMnAJYsrsAKAF2zm5A6HDorPXV4c7FcXm97PpbYCMZX2xT29LTZojfhX2tU7VA/exec"; // <-- reemplaza con tu URL de publicación del Apps Script
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzt77BLIMnAJYsrsAKAF2zm5A6HDorPXV4c7FcXm97PpbYCMZX2xT29LTZojfhX2tU7VA/exec";
 
 let allItems = [];
+let currentModule = "comunicados"; // Valor inicial
 
 // Cargar registros de un módulo
 async function loadModule(module) {
+  if (!module) {
+    console.error("No se ha definido el módulo a cargar");
+    return;
+  }
+  currentModule = module;
+
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getItems&tipo=${module}`);
+    const res = await fetch(`${SCRIPT_URL}?action=getItems&tipo=${encodeURIComponent(module)}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.message || "Error al cargar datos");
 
