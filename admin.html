@@ -1,167 +1,130 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Admin</title>
-  <link rel="stylesheet" href="./css/styles.css">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h2 { color: #333; margin-top: 40px; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f2f2f2; }
-    button { padding: 5px 10px; margin-right: 5px; cursor: pointer; }
-    .module { margin-bottom: 50px; border: 1px solid #ddd; padding: 20px; border-radius: 5px; }
-    .module h2 { margin-top: 0; }
-    .module input, .module button { margin-right: 10px; margin-top: 5px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin</title>
+<link rel="stylesheet" href="./css/styles.css">
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f8; display: flex; height: 100vh; }
+  
+  /* Sidebar */
+  .sidebar { width: 220px; background: #17a2b8; color: white; display: flex; flex-direction: column; padding-top: 20px; }
+  .sidebar h2 { text-align: center; margin-bottom: 30px; }
+  .sidebar button { background: transparent; border: none; color: white; padding: 15px; text-align: left; width: 100%; cursor: pointer; font-size: 1rem; }
+  .sidebar button:hover, .sidebar button.active { background: #138496; }
+  
+  /* Main content */
+  .main { flex: 1; padding: 20px; overflow-y: auto; }
+  
+  .module { display: none; background: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+  .module.active { display: block; }
+
+  .form-inline { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+  .form-inline input[type=text], .form-inline input[type=file] { padding: 0.4rem; border-radius: 4px; border: 1px solid #ccc; }
+  .form-inline button { padding: 0.4rem 0.8rem; border: none; border-radius: 5px; background: #28a745; color: white; cursor: pointer; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+  th { background: #e9ecef; }
+  td img { display: block; max-width: 50px; }
+  td button { margin-right: 5px; padding: 0.3rem 0.5rem; border: none; border-radius: 4px; cursor: pointer; }
+  td button.edit { background: #ffc107; color: white; }
+  td button.delete { background: #dc3545; color: white; }
+
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  header h1 { font-size: 1.5rem; }
+  header button { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; background: #ff4b5c; color: white; }
+</style>
 </head>
 <body>
 
-  <h1>Panel de Administración</h1>
-  <button onclick="logout()">Cerrar Sesión</button>
+<div class="sidebar">
+  <h2>Admin Panel</h2>
+  <button class="tab-btn active" data-target="comunicadosModule">Comunicados</button>
+  <button class="tab-btn" data-target="documentosModule">Documentos</button>
+  <button class="tab-btn" data-target="anexosModule">Anexos</button>
+  <button onclick="logout()" style="margin-top:auto; padding: 15px; background:#dc3545;">Cerrar Sesión</button>
+</div>
 
-  <!-- ================== MODULO COMUNICADOS ================== -->
-  <div class="module" id="moduleComunicados">
+<div class="main">
+  <header><h1>Bienvenido Admin</h1></header>
+
+  <!-- Comunicados -->
+  <div id="comunicadosModule" class="module active">
     <h2>Comunicados</h2>
-    <div>
+    <div class="form-inline">
       <input type="text" id="nombreComunicado" placeholder="Nombre">
       <input type="text" id="tipoComunicado" placeholder="Tipo Documento">
       <input type="file" id="archivoComunicado">
-      <button onclick="agregarNuevo('comunicados')">Registrar Comunicado</button>
+      <button onclick="agregarNuevo('comunicados')">Registrar</button>
     </div>
     <div id="comunicadosContainer"></div>
   </div>
 
-  <!-- ================== MODULO DOCUMENTOS ================== -->
-  <div class="module" id="moduleDocumentos">
+  <!-- Documentos -->
+  <div id="documentosModule" class="module">
     <h2>Documentos</h2>
-    <div>
+    <div class="form-inline">
       <input type="text" id="nombreDocumento" placeholder="Nombre">
       <input type="text" id="tipoDocumento" placeholder="Tipo Documento">
       <input type="file" id="archivoDocumento">
-      <button onclick="agregarNuevo('documentos')">Registrar Documento</button>
+      <button onclick="agregarNuevo('documentos')">Registrar</button>
     </div>
     <div id="documentosContainer"></div>
   </div>
 
-  <!-- ================== MODULO ANEXOS ================== -->
-  <div class="module" id="moduleAnexos">
+  <!-- Anexos -->
+  <div id="anexosModule" class="module">
     <h2>Anexos</h2>
-    <div>
+    <div class="form-inline">
       <input type="text" id="nombreAnexo" placeholder="Nombre">
       <input type="text" id="tipoAnexo" placeholder="Tipo Documento">
       <input type="file" id="archivoAnexo">
-      <button onclick="agregarNuevo('anexos')">Registrar Anexo</button>
+      <button onclick="agregarNuevo('anexos')">Registrar</button>
     </div>
     <div id="anexosContainer"></div>
   </div>
+</div>
 
-  <script src="./js/app.js"></script>
-  <script>
-    // Renderizar tabla con botones CRUD
-    function renderTable(containerId, items, tipo) {
-      const container = document.getElementById(containerId);
-      if(!container) return;
-
-      let html = `<table>
-                    <tr>
-                      <th>ID</th>
-                      <th>Nombre</th>
-                      <th>Tipo</th>
-                      <th>Link</th>
-                      <th>QR</th>
-                      <th>Usuario</th>
-                      <th>Fecha</th>
-                      <th>Visitas</th>
-                      <th>Acciones</th>
-                    </tr>`;
-
-      items.forEach(item => {
-        const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
-        html += `<tr>
-                  <td>${item[idKey]}</td>
-                  <td>${item.Nombre}</td>
-                  <td>${item.Tipo}</td>
-                  <td>${item.Link ? `<a href="${item.Link}" target="_blank">Ver</a>` : ""}</td>
-                  <td>${item.QR ? `<img src="${item.QR}" width="50"/>` : ""}</td>
-                  <td>${item.Usuario}</td>
-                  <td>${item.Fecha}</td>
-                  <td>${item.Visitas}</td>
-                  <td>
-                    <button onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
-                    <button onclick="deleteItem('${tipo}', '${item[idKey]}')">Eliminar</button>
-                  </td>
-                </tr>`;
-      });
-
-      html += `</table>`;
-      container.innerHTML = html;
-    }
-
-    // Registrar nuevo elemento con archivo
-    async function agregarNuevo(tipo) {
-      let nombre, tipoDoc, archivo;
-      if(tipo === "comunicados") {
-        nombre = document.getElementById('nombreComunicado').value.trim();
-        tipoDoc = document.getElementById('tipoComunicado').value.trim();
-        archivo = document.getElementById('archivoComunicado');
-      } else if(tipo === "documentos") {
-        nombre = document.getElementById('nombreDocumento').value.trim();
-        tipoDoc = document.getElementById('tipoDocumento').value.trim();
-        archivo = document.getElementById('archivoDocumento');
-      } else if(tipo === "anexos") {
-        nombre = document.getElementById('nombreAnexo').value.trim();
-        tipoDoc = document.getElementById('tipoAnexo').value.trim();
-        archivo = document.getElementById('archivoAnexo');
-      }
-
-      if(!nombre || !tipoDoc || archivo.files.length === 0) {
-        alert("Complete todos los campos y seleccione un archivo");
-        return;
-      }
-
-      try {
-        await createItemWithFile(tipo, nombre, tipoDoc, archivo);
-        alert("Registrado correctamente. QR generado.");
-        location.reload();
-      } catch(error) {
-        alert("Error al registrar: " + error.message);
-      }
-    }
-
-    // Inicializar datos de Admin
-    document.addEventListener('DOMContentLoaded', async () => {
-      let user = null;
-      try {
-        const usuarioStr = localStorage.getItem('usuario');
-        if(usuarioStr) user = JSON.parse(usuarioStr);
-      } catch(e) {
-        console.error("Error parseando sesión:", e);
-        localStorage.removeItem('usuario');
-      }
-
-      if(!user) { window.location.href = "index.html"; return; }
-      if(user.TipoUsuario?.trim().toLowerCase() !== "admin") {
-        alert("No tiene permisos para acceder");
-        window.location.href = "index.html";
-        return;
-      }
-
-      try {
-        const comunicados = await getItems("comunicados");
-        const documentos = await getItems("documentos");
-        const anexos = await getItems("anexos");
-
-        renderTable("comunicadosContainer", comunicados, "comunicados");
-        renderTable("documentosContainer", documentos, "documentos");
-        renderTable("anexosContainer", anexos, "anexos");
-      } catch (error) {
-        console.error("Error al cargar datos en el panel de admin:", error);
-        alert("Error al cargar los datos en el panel de admin.");
-      }
+<script src="./js/app.js"></script>
+<script>
+  // Manejar cambio de módulo con la sidebar
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+      document.getElementById(btn.dataset.target).classList.add('active');
+      tabButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
     });
-  </script>
+  });
+
+  // Inicializar datos como antes
+  document.addEventListener('DOMContentLoaded', async () => {
+    let user = null;
+    try { user = JSON.parse(localStorage.getItem('usuario')); } 
+    catch(e){ localStorage.removeItem('usuario'); }
+
+    if(!user || user.TipoUsuario.trim().toLowerCase() !== 'admin') {
+      window.location.href = "index.html";
+      return;
+    }
+
+    try {
+      const comunicados = await getItems("comunicados");
+      const documentos = await getItems("documentos");
+      const anexos = await getItems("anexos");
+
+      renderTable("comunicadosContainer", comunicados, "Comunicado");
+      renderTable("documentosContainer", documentos, "Documento");
+      renderTable("anexosContainer", anexos, "Anexo");
+    } catch(error) {
+      console.error(error);
+      alert("Error al cargar los datos del panel.");
+    }
+  });
+</script>
+
 </body>
 </html>
