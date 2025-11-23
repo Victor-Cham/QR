@@ -1,1 +1,153 @@
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    height: 100vh;
+    background: #f0f2f5;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    background: #343a40;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  }
+  .sidebar h2 {
+    font-size: 1.4rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+  .sidebar button {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.8rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .sidebar button:hover {
+    background: #495057;
+  }
+
+  /* Main content */
+  .main {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  header h1 {
+    margin: 0;
+    color: #343a40;
+  }
+  header button {
+    background: #ff4b5c;
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  header button:hover {
+    background: #e03b50;
+  }
+
+  /* Tabla */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  th, td {
+    padding: 0.7rem 1rem;
+    text-align: left;
+  }
+  th {
+    background: #17a2b8;
+    color: white;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+  }
+  tr:nth-child(even) {
+    background: #f8f9fa;
+  }
+
+  /* Buttons in table */
+  td button {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.7rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-right: 0.3rem;
+    transition: background 0.2s;
+  }
+  td button:hover {
+    background: #138496;
+  }
+
+  /* Formulario */
+  form {
+    margin-top: 1.5rem;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  form input[type="text"], form input[type="file"], form select {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  form button {
+    padding: 0.5rem 1rem;
+    background: #28a745;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  form button:hover {
+    background: #218838;
+  }
+
+  /* Responsive */
+  @media(max-width: 768px){
+    .sidebar { width: 60px; padding: 0.5rem; }
+    .sidebar h2 { display: none; }
+    .sidebar button { font-size: 0; justify-content: center; padding: 0.6rem; }
+    .sidebar button::before { content: attr(data-icon); display: block; font-size: 1.2rem; }
+    .main { padding: 1rem; }
+  }
+</style>
 
