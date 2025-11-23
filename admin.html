@@ -2,136 +2,195 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Gestión de Contenidos</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="./css/styles.css">
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #007bff;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    header button {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #dc3545;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    header button:hover { background: #c82333; }
+
+    main {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    section {
+      margin-bottom: 3rem;
+    }
+
+    h2 {
+      margin-bottom: 1rem;
+      color: #333;
+    }
+
+    button.add-btn {
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button.add-btn:hover { background: #218838; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 0.8rem;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
+    }
+
+    tr:hover { background: #f1f1f1; }
+
+    td button {
+      margin: 0 2px;
+      padding: 0.3rem 0.6rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .edit-btn { background: #ffc107; color: #212529; }
+    .edit-btn:hover { background: #e0a800; }
+
+    .delete-btn { background: #dc3545; color: white; }
+    .delete-btn:hover { background: #c82333; }
+  </style>
 </head>
 <body>
-  <h1>Panel de Administración</h1>
-  <button onclick="logout()">Cerrar sesión</button>
 
-  <h2>Comunicados</h2>
-  <button onclick="nuevoItem('comunicados')">Agregar Comunicado</button>
-  <table id="tablaComunicados" border="1">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nombre</th>
-        <th>Tipo</th>
-        <th>Link</th>
-        <th>QR Online</th>
-        <th>Usuario Crea</th>
-        <th>Fecha Creado</th>
-        <th>Visitas</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <header>
+    <h1>Panel de Administración</h1>
+    <button onclick="logout()">Cerrar sesión</button>
+  </header>
 
-  <h2>Documentos</h2>
-  <button onclick="nuevoItem('documentos')">Agregar Documento</button>
-  <table id="tablaDocumentos" border="1">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nombre</th>
-        <th>Tipo</th>
-        <th>Link</th>
-        <th>QR Online</th>
-        <th>Usuario Crea</th>
-        <th>Fecha Creado</th>
-        <th>Visitas</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <main>
+    <section>
+      <h2>Comunicados</h2>
+      <button class="add-btn" onclick="nuevoItem('comunicados')">Agregar Comunicado</button>
+      <table id="tablaComunicados">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Link</th>
+            <th>QR</th>
+            <th>Usuario Crea</th>
+            <th>Fecha</th>
+            <th>Visitas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-  <h2>Anexos</h2>
-  <button onclick="nuevoItem('anexos')">Agregar Anexo</button>
-  <table id="tablaAnexos" border="1">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nombre</th>
-        <th>Tipo</th>
-        <th>Link</th>
-        <th>QR Online</th>
-        <th>Usuario Crea</th>
-        <th>Fecha Creado</th>
-        <th>Visitas</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <section>
+      <h2>Documentos</h2>
+      <button class="add-btn" onclick="nuevoItem('documentos')">Agregar Documento</button>
+      <table id="tablaDocumentos">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Link</th>
+            <th>QR</th>
+            <th>Usuario Crea</th>
+            <th>Fecha</th>
+            <th>Visitas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-  <script src="js/app.js"></script>
+    <section>
+      <h2>Anexos</h2>
+      <button class="add-btn" onclick="nuevoItem('anexos')">Agregar Anexo</button>
+      <table id="tablaAnexos">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Link</th>
+            <th>QR</th>
+            <th>Usuario Crea</th>
+            <th>Fecha</th>
+            <th>Visitas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="./js/app.js"></script>
   <script>
-    // Logout
     function logout() {
       localStorage.removeItem('usuario');
       window.location.href = "index.html";
     }
 
-    // Cargar tablas
     document.addEventListener('DOMContentLoaded', async () => {
       await cargarTabla('comunicados', 'tablaComunicados');
       await cargarTabla('documentos', 'tablaDocumentos');
       await cargarTabla('anexos', 'tablaAnexos');
     });
-
-    async function cargarTabla(tipo, tablaId) {
-      const items = await getItems(tipo);
-      const tbody = document.getElementById(tablaId).querySelector('tbody');
-      tbody.innerHTML = "";
-      items.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${item[`${tipo.substring(0,3).toUpperCase()}ID`]}</td>
-          <td>${item.Nombre}</td>
-          <td>${item.Tipo}</td>
-          <td><a href="${item.Link}" target="_blank">Ver</a></td>
-          <td><a href="${item['QR Online']}" target="_blank">QR</a></td>
-          <td>${item['Usuario Crea']}</td>
-          <td>${item['Fecha Creado']}</td>
-          <td>${item.VisitasTotales}</td>
-          <td>
-            <button onclick="editarItem('${tipo}','${item[`${tipo.substring(0,3).toUpperCase()}ID`]}')">Editar</button>
-            <button onclick="eliminarItem('${tipo}','${item[`${tipo.substring(0,3).toUpperCase()}ID`]}')">Eliminar</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function nuevoItem(tipo) {
-      const nombre = prompt("Nombre:");
-      const tipoDoc = prompt("Tipo:");
-      const link = prompt("Link:");
-      if(nombre && tipoDoc && link) {
-        await createItem(tipo, nombre, tipoDoc, link);
-        await cargarTabla(tipo, `tabla${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
-      }
-    }
-
-    async function editarItem(tipo, id) {
-      const nombre = prompt("Nombre nuevo:");
-      const tipoDoc = prompt("Tipo nuevo:");
-      const link = prompt("Link nuevo:");
-      if(nombre && tipoDoc && link) {
-        await updateItem(tipo, id, nombre, tipoDoc, link);
-        await cargarTabla(tipo, `tabla${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
-      }
-    }
-
-    async function eliminarItem(tipo, id) {
-      if(confirm("¿Seguro que deseas eliminar este item?")) {
-        await deleteItem(tipo, id);
-        await cargarTabla(tipo, `tabla${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
-      }
-    }
   </script>
 </body>
 </html>
-
