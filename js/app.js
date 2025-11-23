@@ -8,6 +8,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzual47SlXlozqzIsnJsBVB
  *                  LOGIN
  ************************************************************/
 async function login(usuario, contrasena) {
+  if(!usuario || !contrasena) {
+    alert("Debe ingresar usuario y contraseña");
+    return;
+  }
+
   try {
     const response = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`);
     const result = await response.json();
@@ -17,22 +22,14 @@ async function login(usuario, contrasena) {
       return;
     }
 
-    const tipo = result.usuario.TipoUsuario.trim().toLowerCase();
-
     localStorage.setItem('usuario', JSON.stringify(result.usuario));
 
+    const tipo = result.usuario.TipoUsuario.trim().toLowerCase();
     switch(tipo) {
-      case "superadmin":
-        window.location.href = "superadmin.html";
-        break;
-      case "admin":
-        window.location.href = "admin.html";
-        break;
-      case "usuario":
-        window.location.href = "usuario.html";
-        break;
-      default:
-        alert("Tipo de usuario no válido");
+      case "superadmin": window.location.href = "superadmin.html"; break;
+      case "admin": window.location.href = "admin.html"; break;
+      case "usuario": window.location.href = "usuario.html"; break;
+      default: alert("Tipo de usuario no válido");
     }
 
   } catch (error) {
@@ -41,25 +38,17 @@ async function login(usuario, contrasena) {
   }
 }
 
-// Captura del formulario de login
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('loginForm');
-  if(form) {
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const usuario = document.getElementById('usuario').value.trim();
-      const contrasena = document.getElementById('contrasena').value.trim();
-      login(usuario, contrasena);
-    });
-  }
-});
-
+/************************************************************
+ *                  LOGOUT
+ ************************************************************/
+function logout() {
+  localStorage.removeItem('usuario');
+  window.location.href = "index.html";
+}
 
 /************************************************************
  *                  FUNCIONES CRUD
  ************************************************************/
-
-// Obtener items
 async function getItems(tipo) {
   const resp = await fetch(`${API_URL}?action=getItems&tipo=${tipo}`);
   const data = await resp.json();
@@ -67,55 +56,30 @@ async function getItems(tipo) {
   return data.items;
 }
 
-// Crear item
 async function createItem(tipo, nombre, tipoDocumento, link) {
-  const usuario = JSON.parse(localStorage.getItem('usuario')).DNI || "";
-  const body = new URLSearchParams({
-    action: "createItem",
-    tipo,
-    nombre,
-    tipoDocumento,
-    link,
-    usuario
-  });
-
+  const usuario = JSON.parse(localStorage.getItem('usuario') || "{}").DNI || "";
+  const body = new URLSearchParams({ action: "createItem", tipo, nombre, tipoDocumento, link, usuario });
   const resp = await fetch(API_URL, { method: "POST", body });
   const data = await resp.json();
   if(!data.success) throw new Error(data.message || "Error al crear item");
   return data.id;
 }
 
-// Editar item
 async function updateItem(tipo, id, nombre, tipoDocumento, link) {
-  const body = new URLSearchParams({
-    action: "updateItem",
-    tipo,
-    id,
-    nombre,
-    tipoDocumento,
-    link
-  });
-
+  const body = new URLSearchParams({ action: "updateItem", tipo, id, nombre, tipoDocumento, link });
   const resp = await fetch(API_URL, { method: "POST", body });
   const data = await resp.json();
   if(!data.success) throw new Error(data.message || "Error al actualizar item");
   return true;
 }
 
-// Eliminar item
 async function deleteItem(tipo, id) {
-  const body = new URLSearchParams({
-    action: "deleteItem",
-    tipo,
-    id
-  });
-
+  const body = new URLSearchParams({ action: "deleteItem", tipo, id });
   const resp = await fetch(API_URL, { method: "POST", body });
   const data = await resp.json();
   if(!data.success) throw new Error(data.message || "Error al eliminar item");
   return true;
 }
-
 
 /************************************************************
  *                  DASHBOARD SUPERADMIN
@@ -127,22 +91,37 @@ async function getStats() {
   return data;
 }
 
-
 /************************************************************
  *          INICIALIZACIÓN SEGÚN ROL
  ************************************************************/
 document.addEventListener('DOMContentLoaded', async () => {
-  const user = JSON.parse(localStorage.getItem('usuario'));
-  if(!user) {
-    window.location.href = "index.html";
-    return;
+  // Captura del login
+  const form = document.getElementById('loginForm');
+  if(form) {
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const usuario = document.getElementById('usuario').value.trim();
+      const contrasena = document.getElementById('contrasena').value.trim();
+      login(usuario, contrasena);
+    });
   }
 
-  const tipo = user.TipoUsuario.trim().toLowerCase();
+  // Inicialización segura según sesión
+  let user = null;
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if(usuarioStr) user = JSON.parse(usuarioStr);
+  } catch(e) {
+    console.error("Error parseando sesión:", e);
+    localStorage.removeItem('usuario');
+  }
+
+  if(!user) return; // Si no hay sesión, se queda en login
+
+  const tipo = user.TipoUsuario?.trim().toLowerCase() || "";
 
   try {
     if(tipo === "admin") {
-      // Admin: traer comunicados, documentos, anexos
       const comunicados = await getItems("comunicados");
       const documentos = await getItems("documentos");
       const anexos = await getItems("anexos");
@@ -150,24 +129,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log("Documentos:", documentos);
       console.log("Anexos:", anexos);
       // TODO: renderizar tablas en admin.html
-
     } else if(tipo === "superadmin") {
-      // SuperAdmin: traer estadísticas
       const stats = await getStats();
       console.log("Dashboard stats:", stats);
-      // TODO: mostrar gráficos/tablas en superadmin.html
-
+      // TODO: renderizar gráficos en superadmin.html
     } else if(tipo === "usuario") {
-      // Usuario: solo lectura de documentos y anexos
       const documentos = await getItems("documentos");
       const anexos = await getItems("anexos");
       console.log("Documentos:", documentos);
       console.log("Anexos:", anexos);
-      // TODO: mostrar vista de solo lectura en usuario.html
+      // TODO: vista solo lectura en usuario.html
     }
   } catch (error) {
     console.error("Error al inicializar la página:", error);
     alert("Error al cargar los datos. Intente recargar la página.");
   }
 });
+
 
