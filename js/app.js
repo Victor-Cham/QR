@@ -3,7 +3,6 @@
  ************************************************************/
 const API_URL = "https://script.google.com/macros/s/AKfycbzual47SlXlozqzIsnJsBVBUg39OCKKDHyaDJMajV_YGUOi5cjKltZWkrmbC4-k4wn4sg/exec";
 
-
 /************************************************************
  *                  LOGIN
  ************************************************************/
@@ -23,8 +22,8 @@ async function login(usuario, contrasena) {
     }
 
     localStorage.setItem('usuario', JSON.stringify(result.usuario));
-
     const tipo = result.usuario.TipoUsuario.trim().toLowerCase();
+
     switch(tipo) {
       case "superadmin": window.location.href = "superadmin.html"; break;
       case "admin": window.location.href = "admin.html"; break;
@@ -50,10 +49,15 @@ function logout() {
  *                  FUNCIONES CRUD
  ************************************************************/
 async function getItems(tipo) {
-  const resp = await fetch(`${API_URL}?action=getItems&tipo=${tipo}`);
-  const data = await resp.json();
-  if(!data.success) throw new Error(data.message || "Error al obtener datos");
-  return data.items;
+  try {
+    const resp = await fetch(`${API_URL}?action=getItems&tipo=${tipo}`);
+    const data = await resp.json();
+    if(!data.success) return [];
+    return data.items || [];
+  } catch(err) {
+    console.error("Error al obtener items:", err);
+    return [];
+  }
 }
 
 async function createItem(tipo, nombre, tipoDocumento, link) {
@@ -85,10 +89,14 @@ async function deleteItem(tipo, id) {
  *                  DASHBOARD SUPERADMIN
  ************************************************************/
 async function getStats() {
-  const resp = await fetch(`${API_URL}?action=getStats`);
-  const data = await resp.json();
-  if(!data.success) throw new Error("No se pudieron cargar las estadísticas");
-  return data;
+  try {
+    const resp = await fetch(`${API_URL}?action=getStats`);
+    const data = await resp.json();
+    return data.success ? data : {usuarios:0, comunicados:0, documentos:0, anexos:0};
+  } catch(err) {
+    console.error("Error al obtener estadísticas:", err);
+    return {usuarios:0, comunicados:0, documentos:0, anexos:0};
+  }
 }
 
 /************************************************************
@@ -106,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Inicialización segura según sesión
+  // Inicialización según sesión
   let user = null;
   try {
     const usuarioStr = localStorage.getItem('usuario');
@@ -120,30 +128,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const tipo = user.TipoUsuario?.trim().toLowerCase() || "";
 
+  // Solo inicializar dashboard si existen elementos de la página
   try {
-    if(tipo === "admin") {
+    if(tipo === "admin" && document.querySelector("#adminDashboard")) {
       const comunicados = await getItems("comunicados");
       const documentos = await getItems("documentos");
       const anexos = await getItems("anexos");
       console.log("Comunicados:", comunicados);
       console.log("Documentos:", documentos);
       console.log("Anexos:", anexos);
-      // TODO: renderizar tablas en admin.html
-    } else if(tipo === "superadmin") {
+    } else if(tipo === "superadmin" && document.querySelector("#superAdminDashboard")) {
       const stats = await getStats();
       console.log("Dashboard stats:", stats);
-      // TODO: renderizar gráficos en superadmin.html
-    } else if(tipo === "usuario") {
+    } else if(tipo === "usuario" && document.querySelector("#usuarioDashboard")) {
       const documentos = await getItems("documentos");
       const anexos = await getItems("anexos");
       console.log("Documentos:", documentos);
       console.log("Anexos:", anexos);
-      // TODO: vista solo lectura en usuario.html
     }
   } catch (error) {
     console.error("Error al inicializar la página:", error);
     alert("Error al cargar los datos. Intente recargar la página.");
   }
 });
-
-
