@@ -1,46 +1,61 @@
 /************************************************************
- * URL DE LA WEB APP (Google Apps Script)
+ *          URL DE LA WEB APP (Google Apps Script)
  ************************************************************/
 const API_URL = "https://script.google.com/macros/s/AKfycbzt77BLIMnAJYsrsAKAF2zm5A6HDorPXV4c7FcXm97PpbYCMZX2xT29LTZojfhX2tU7VA/exec";
 
+let currentModule = 'comunicados';
+
 /************************************************************
- * LOGIN
+ *                  LOGIN
  ************************************************************/
 async function login(usuario, contrasena) {
-  if(!usuario || !contrasena) {
+  if (!usuario || !contrasena) {
     alert("Debe ingresar usuario y contraseña");
     return;
   }
 
-  try {
-    const resp = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`);
-    const result = await resp.json();
+  console.log("Intento de login:", usuario);
 
-    if(!result.success) {
+  try {
+    const response = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`);
+    const result = await response.json();
+
+    console.log("Respuesta login:", result);
+
+    if (!result.success) {
       alert(result.message || "Usuario o contraseña incorrecta");
       return;
     }
 
-    // Guardar usuario en sesión
+    // Guardar usuario en localStorage
     localStorage.setItem('usuario', JSON.stringify(result.usuario));
 
-    // Redirigir según rol
-    const tipo = result.usuario.TipoUsuario?.trim().toLowerCase();
-    switch(tipo) {
-      case "superadmin": window.location.href = "superadmin.html"; break;
-      case "admin": window.location.href = "admin.html"; break;
-      case "usuario": window.location.href = "usuario.html"; break;
-      default: alert("Tipo de usuario no válido");
+    // Validar tipo de usuario
+    const tipo = (result.usuario.TipoUsuario || "").trim().toLowerCase();
+
+    switch (tipo) {
+      case "superadmin":
+        window.location.href = "superadmin.html";
+        break;
+      case "admin":
+        window.location.href = "admin.html";
+        break;
+      case "usuario":
+        window.location.href = "usuario.html";
+        break;
+      default:
+        alert("Tipo de usuario no válido, revise la hoja PERSONAS");
+        localStorage.removeItem('usuario');
     }
 
-  } catch(err) {
-    console.error("Error al conectar con la Web App:", err);
+  } catch (error) {
+    console.error("Error al conectar con la Web App:", error);
     alert("No se pudo conectar con el servidor. Intente más tarde.");
   }
 }
 
 /************************************************************
- * LOGOUT
+ *                  LOGOUT
  ************************************************************/
 function logout() {
   localStorage.removeItem('usuario');
@@ -48,14 +63,15 @@ function logout() {
 }
 
 /************************************************************
- * CRUD BASICO
+ *                  FUNCIONES CRUD
  ************************************************************/
 async function getItems(tipo) {
   try {
     const resp = await fetch(`${API_URL}?action=getItems&tipo=${tipo}`);
     const data = await resp.json();
-    return data.success ? data.items || [] : [];
-  } catch(err) {
+    if (!data.success) return [];
+    return data.items || [];
+  } catch (err) {
     console.error("Error al obtener items:", err);
     return [];
   }
@@ -63,44 +79,43 @@ async function getItems(tipo) {
 
 async function createItem(tipo, nombre, tipoDocumento, link) {
   const usuario = JSON.parse(localStorage.getItem('usuario') || "{}").DNI || "";
-  const body = new URLSearchParams({ action:"createItem", tipo, nombre, tipoDocumento, link, usuario });
-  const resp = await fetch(API_URL, { method:"POST", body });
+  const body = new URLSearchParams({ action: "createItem", tipo, nombre, tipoDocumento, link, usuario });
+
+  const resp = await fetch(API_URL, { method: "POST", body });
   const data = await resp.json();
-  if(!data.success) throw new Error(data.message || "Error al crear item");
+  if (!data.success) throw new Error(data.message || "Error al crear item");
   return data.id;
 }
 
 async function updateItem(tipo, id, nombre, tipoDocumento, link) {
-  const body = new URLSearchParams({ action:"updateItem", tipo, id, nombre, tipoDocumento, link });
-  const resp = await fetch(API_URL, { method:"POST", body });
+  const body = new URLSearchParams({ action: "updateItem", tipo, id, nombre, tipoDocumento, link });
+  const resp = await fetch(API_URL, { method: "POST", body });
   const data = await resp.json();
-  if(!data.success) throw new Error(data.message || "Error al actualizar item");
+  if (!data.success) throw new Error(data.message || "Error al actualizar item");
   return true;
 }
 
 async function deleteItem(tipo, id) {
-  const body = new URLSearchParams({ action:"deleteItem", tipo, id });
-  const resp = await fetch(API_URL, { method:"POST", body });
+  const body = new URLSearchParams({ action: "deleteItem", tipo, id });
+  const resp = await fetch(API_URL, { method: "POST", body });
   const data = await resp.json();
-  if(!data.success) throw new Error(data.message || "Error al eliminar item");
+  if (!data.success) throw new Error(data.message || "Error al eliminar item");
   return true;
 }
 
 /************************************************************
- * RENDER TABLA Y FILTROS
+ *                  RENDER TABLAS
  ************************************************************/
-let currentModule = 'comunicados';
-
-function renderTable(items) {
+function renderTable(tipo, items) {
   const container = document.getElementById('moduleContainer');
-  if(!container) return;
+  if (!container) return;
 
-  if(items.length === 0) {
+  if (items.length === 0) {
     container.innerHTML = "<p>No hay registros.</p>";
     return;
   }
 
-  let html = `<table>
+  let html = `<table id="${tipo}Table">
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -116,6 +131,7 @@ function renderTable(items) {
                 </thead>
                 <tbody></tbody>
               </table>`;
+
   container.innerHTML = html;
   const tbody = container.querySelector("tbody");
 
@@ -132,113 +148,128 @@ function renderTable(items) {
       <td>${item["Fecha Creado"]}</td>
       <td>${item.VisitasTotales}</td>
       <td>
-        <button class="crud-btn edit" onclick="editItem('${item[idKey]}')">Editar</button>
-        <button class="crud-btn delete" onclick="deleteItemHandler('${item[idKey]}')">Eliminar</button>
+        <button class="crud-btn edit" onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
+        <button class="crud-btn delete" onclick="deleteItemHandler('${tipo}', '${item[idKey]}')">Eliminar</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
+/************************************************************
+ *                  FILTRO TABLA
+ ************************************************************/
 function filterTable() {
   const input = document.getElementById('searchInput');
-  if(!input) return;
+  if (!input) return;
   const query = input.value.toLowerCase();
   const rows = document.querySelectorAll("#moduleContainer table tbody tr");
 
   rows.forEach(row => {
-    const nombre = row.cells[1].innerText.toLowerCase();
+    const nombre = row.cells[1]?.innerText.toLowerCase() || "";
     row.style.display = nombre.includes(query) ? "" : "none";
   });
 }
 
 /************************************************************
- * CRUD HANDLERS
+ *                  CRUD HANDLERS
  ************************************************************/
 async function addItem() {
   const nombre = prompt("Ingrese nombre:");
   const tipoDocumento = prompt("Ingrese tipo:");
   const link = prompt("Ingrese link:");
 
-  if(nombre && tipoDocumento && link) {
-    try {
-      await createItem(currentModule, nombre, tipoDocumento, link);
-      alert("Registro agregado correctamente");
-      await loadModule(currentModule);
-    } catch(err) {
-      alert("Error al agregar item: " + err.message);
-    }
+  if (!nombre || !tipoDocumento || !link) return;
+
+  try {
+    await createItem(currentModule, nombre, tipoDocumento, link);
+    alert("Registro agregado correctamente");
+    await loadModule(currentModule);
+  } catch (err) {
+    alert("Error al agregar item: " + err.message);
   }
 }
 
-async function editItem(id) {
+async function editItem(tipo, id) {
   const nombre = prompt("Ingrese nuevo nombre:");
   const tipoDocumento = prompt("Ingrese nuevo tipo:");
   const link = prompt("Ingrese nuevo link:");
 
-  if(nombre && tipoDocumento && link) {
-    try {
-      await updateItem(currentModule, id, nombre, tipoDocumento, link);
-      await loadModule(currentModule);
-    } catch(err) {
-      alert("Error al actualizar: " + err.message);
-    }
+  if (!nombre || !tipoDocumento || !link) return;
+
+  try {
+    await updateItem(tipo, id, nombre, tipoDocumento, link);
+    await loadModule(tipo);
+  } catch (err) {
+    alert("Error al actualizar: " + err.message);
   }
 }
 
-async function deleteItemHandler(id) {
-  if(confirm("¿Desea eliminar este registro?")) {
-    try {
-      await deleteItem(currentModule, id);
-      await loadModule(currentModule);
-    } catch(err) {
-      alert("Error al eliminar: " + err.message);
-    }
+async function deleteItemHandler(tipo, id) {
+  if (!confirm("¿Desea eliminar este registro?")) return;
+
+  try {
+    await deleteItem(tipo, id);
+    await loadModule(tipo);
+  } catch (err) {
+    alert("Error al eliminar: " + err.message);
   }
 }
 
 /************************************************************
- * CARGA DE MÓDULOS
+ *                  CARGA DE MÓDULOS
  ************************************************************/
 async function loadModule(module) {
   currentModule = module;
 
   document.querySelectorAll('.sidebar button').forEach(btn => {
     btn.classList.remove('active');
-    if(btn.textContent.toLowerCase() === module) btn.classList.add('active');
+    if (btn.textContent.toLowerCase() === module) btn.classList.add('active');
   });
 
   const items = await getItems(module);
-  renderTable(items);
+  renderTable(module, items);
 }
 
 /************************************************************
- * INICIALIZACIÓN AL CARGAR PÁGINA
+ *          INICIALIZACIÓN SEGÚN ROL
  ************************************************************/
 document.addEventListener('DOMContentLoaded', async () => {
   let user = null;
   try {
-    user = JSON.parse(localStorage.getItem('usuario'));
-  } catch(e) {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (usuarioStr) user = JSON.parse(usuarioStr);
+  } catch (e) {
     localStorage.removeItem('usuario');
   }
 
-  if(!user) return;
+  if (!user) return; // no hay sesión activa
 
+  const tipo = (user.TipoUsuario || "").trim().toLowerCase();
   document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
-  
-  // Cargar módulo por defecto para admin
-  const tipo = user.TipoUsuario?.trim().toLowerCase() || "";
-  if(tipo === "admin") await loadModule('comunicados');
+
+  if (tipo === "admin") {
+    await loadModule('comunicados');
+  } else if (tipo === "superadmin") {
+    await loadModule('comunicados');
+  } else if (tipo === "usuario") {
+    await loadModule('comunicados'); // si quieres módulo distinto para usuario, cámbialo
+  } else {
+    alert("Tipo de usuario no válido");
+    logout();
+  }
 });
 
 /************************************************************
- * EXPONER FUNCIONES AL GLOBAL
+ *          EXPONER FUNCIONES AL GLOBAL
  ************************************************************/
 window.login = login;
 window.logout = logout;
+window.getItems = getItems;
+window.createItem = createItem;
+window.updateItem = updateItem;
+window.deleteItemHandler = deleteItemHandler;
 window.addItem = addItem;
 window.editItem = editItem;
-window.deleteItemHandler = deleteItemHandler;
 window.loadModule = loadModule;
 window.filterTable = filterTable;
