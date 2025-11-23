@@ -1,10 +1,10 @@
 /************************************************************
- *          URL DE LA WEB APP (Google Apps Script)
+ * URL DE LA WEB APP (Google Apps Script)
  ************************************************************/
 const API_URL = "https://script.google.com/macros/s/AKfycbzt77BLIMnAJYsrsAKAF2zm5A6HDorPXV4c7FcXm97PpbYCMZX2xT29LTZojfhX2tU7VA/exec";
 
 /************************************************************
- *                  LOGIN
+ * LOGIN
  ************************************************************/
 async function login(usuario, contrasena) {
   if(!usuario || !contrasena) {
@@ -12,20 +12,20 @@ async function login(usuario, contrasena) {
     return;
   }
 
-  console.log("Intento de login:", usuario);
-
   try {
-    const response = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`);
-    const result = await response.json();
+    const resp = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`);
+    const result = await resp.json();
 
     if(!result.success) {
       alert(result.message || "Usuario o contraseña incorrecta");
       return;
     }
 
+    // Guardar usuario en sesión
     localStorage.setItem('usuario', JSON.stringify(result.usuario));
 
-    const tipo = result.usuario.TipoUsuario.trim().toLowerCase();
+    // Redirigir según rol
+    const tipo = result.usuario.TipoUsuario?.trim().toLowerCase();
     switch(tipo) {
       case "superadmin": window.location.href = "superadmin.html"; break;
       case "admin": window.location.href = "admin.html"; break;
@@ -33,14 +33,14 @@ async function login(usuario, contrasena) {
       default: alert("Tipo de usuario no válido");
     }
 
-  } catch (error) {
-    console.error("Error al conectar con la Web App:", error);
+  } catch(err) {
+    console.error("Error al conectar con la Web App:", err);
     alert("No se pudo conectar con el servidor. Intente más tarde.");
   }
 }
 
 /************************************************************
- *                  LOGOUT
+ * LOGOUT
  ************************************************************/
 function logout() {
   localStorage.removeItem('usuario');
@@ -48,14 +48,13 @@ function logout() {
 }
 
 /************************************************************
- *                  FUNCIONES CRUD
+ * CRUD BASICO
  ************************************************************/
 async function getItems(tipo) {
   try {
     const resp = await fetch(`${API_URL}?action=getItems&tipo=${tipo}`);
     const data = await resp.json();
-    if(!data.success) return [];
-    return data.items || [];
+    return data.success ? data.items || [] : [];
   } catch(err) {
     console.error("Error al obtener items:", err);
     return [];
@@ -64,33 +63,35 @@ async function getItems(tipo) {
 
 async function createItem(tipo, nombre, tipoDocumento, link) {
   const usuario = JSON.parse(localStorage.getItem('usuario') || "{}").DNI || "";
-  const body = new URLSearchParams({ action: "createItem", tipo, nombre, tipoDocumento, link, usuario });
-  const resp = await fetch(API_URL, { method: "POST", body });
+  const body = new URLSearchParams({ action:"createItem", tipo, nombre, tipoDocumento, link, usuario });
+  const resp = await fetch(API_URL, { method:"POST", body });
   const data = await resp.json();
   if(!data.success) throw new Error(data.message || "Error al crear item");
   return data.id;
 }
 
 async function updateItem(tipo, id, nombre, tipoDocumento, link) {
-  const body = new URLSearchParams({ action: "updateItem", tipo, id, nombre, tipoDocumento, link });
-  const resp = await fetch(API_URL, { method: "POST", body });
+  const body = new URLSearchParams({ action:"updateItem", tipo, id, nombre, tipoDocumento, link });
+  const resp = await fetch(API_URL, { method:"POST", body });
   const data = await resp.json();
   if(!data.success) throw new Error(data.message || "Error al actualizar item");
   return true;
 }
 
 async function deleteItem(tipo, id) {
-  const body = new URLSearchParams({ action: "deleteItem", tipo, id });
-  const resp = await fetch(API_URL, { method: "POST", body });
+  const body = new URLSearchParams({ action:"deleteItem", tipo, id });
+  const resp = await fetch(API_URL, { method:"POST", body });
   const data = await resp.json();
   if(!data.success) throw new Error(data.message || "Error al eliminar item");
   return true;
 }
 
 /************************************************************
- *                  RENDER TABLAS Y FILTROS
+ * RENDER TABLA Y FILTROS
  ************************************************************/
-function renderTable(tipo, items) {
+let currentModule = 'comunicados';
+
+function renderTable(items) {
   const container = document.getElementById('moduleContainer');
   if(!container) return;
 
@@ -99,7 +100,7 @@ function renderTable(tipo, items) {
     return;
   }
 
-  let html = `<table id="${tipo}Table">
+  let html = `<table>
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -113,11 +114,9 @@ function renderTable(tipo, items) {
                     <th>Acciones</th>
                   </tr>
                 </thead>
-                <tbody>
-                </tbody>
+                <tbody></tbody>
               </table>`;
   container.innerHTML = html;
-
   const tbody = container.querySelector("tbody");
 
   items.forEach(item => {
@@ -133,8 +132,8 @@ function renderTable(tipo, items) {
       <td>${item["Fecha Creado"]}</td>
       <td>${item.VisitasTotales}</td>
       <td>
-        <button class="crud-btn edit" onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
-        <button class="crud-btn delete" onclick="deleteItemHandler('${tipo}', '${item[idKey]}')">Eliminar</button>
+        <button class="crud-btn edit" onclick="editItem('${item[idKey]}')">Editar</button>
+        <button class="crud-btn delete" onclick="deleteItemHandler('${item[idKey]}')">Eliminar</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -143,6 +142,7 @@ function renderTable(tipo, items) {
 
 function filterTable() {
   const input = document.getElementById('searchInput');
+  if(!input) return;
   const query = input.value.toLowerCase();
   const rows = document.querySelectorAll("#moduleContainer table tbody tr");
 
@@ -153,7 +153,7 @@ function filterTable() {
 }
 
 /************************************************************
- *                  CRUD HANDLERS
+ * CRUD HANDLERS
  ************************************************************/
 async function addItem() {
   const nombre = prompt("Ingrese nombre:");
@@ -171,26 +171,26 @@ async function addItem() {
   }
 }
 
-async function editItem(tipo, id) {
+async function editItem(id) {
   const nombre = prompt("Ingrese nuevo nombre:");
   const tipoDocumento = prompt("Ingrese nuevo tipo:");
   const link = prompt("Ingrese nuevo link:");
 
   if(nombre && tipoDocumento && link) {
     try {
-      await updateItem(tipo, id, nombre, tipoDocumento, link);
-      await loadModule(tipo);
+      await updateItem(currentModule, id, nombre, tipoDocumento, link);
+      await loadModule(currentModule);
     } catch(err) {
       alert("Error al actualizar: " + err.message);
     }
   }
 }
 
-async function deleteItemHandler(tipo, id) {
+async function deleteItemHandler(id) {
   if(confirm("¿Desea eliminar este registro?")) {
     try {
-      await deleteItem(tipo, id);
-      await loadModule(tipo);
+      await deleteItem(currentModule, id);
+      await loadModule(currentModule);
     } catch(err) {
       alert("Error al eliminar: " + err.message);
     }
@@ -198,9 +198,8 @@ async function deleteItemHandler(tipo, id) {
 }
 
 /************************************************************
- *                  CARGA DE MÓDULOS
+ * CARGA DE MÓDULOS
  ************************************************************/
-let currentModule = 'comunicados';
 async function loadModule(module) {
   currentModule = module;
 
@@ -210,14 +209,13 @@ async function loadModule(module) {
   });
 
   const items = await getItems(module);
-  renderTable(module, items);
+  renderTable(items);
 }
 
 /************************************************************
- *          INICIALIZACIÓN SEGÚN ROL
+ * INICIALIZACIÓN AL CARGAR PÁGINA
  ************************************************************/
 document.addEventListener('DOMContentLoaded', async () => {
-  // Validar sesión
   let user = null;
   try {
     user = JSON.parse(localStorage.getItem('usuario'));
@@ -228,24 +226,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(!user) return;
 
   document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
-
+  
+  // Cargar módulo por defecto para admin
   const tipo = user.TipoUsuario?.trim().toLowerCase() || "";
-
-  if(tipo === "admin") {
-    await loadModule('comunicados');
-  }
+  if(tipo === "admin") await loadModule('comunicados');
 });
 
 /************************************************************
- *          EXPONER FUNCIONES AL GLOBAL
+ * EXPONER FUNCIONES AL GLOBAL
  ************************************************************/
 window.login = login;
 window.logout = logout;
-window.getItems = getItems;
-window.createItem = createItem;
-window.updateItem = updateItem;
-window.deleteItemHandler = deleteItemHandler;
 window.addItem = addItem;
 window.editItem = editItem;
+window.deleteItemHandler = deleteItemHandler;
 window.loadModule = loadModule;
 window.filterTable = filterTable;
