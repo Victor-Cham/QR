@@ -67,8 +67,13 @@ async function getItems(tipo) {
   }
 }
 
-// NUEVO: Subir archivo y registrar en Sheet
+// Subir archivo y registrar en Sheet
 async function uploadItem(tipo, nombre, tipoDocumento, archivo) {
+  if (!archivo) {
+    alert("Debe seleccionar un archivo");
+    return;
+  }
+
   const usuario = JSON.parse(localStorage.getItem('usuario') || "{}").DNI || "";
 
   const formData = new FormData();
@@ -78,11 +83,18 @@ async function uploadItem(tipo, nombre, tipoDocumento, archivo) {
   formData.append("tipoDocumento", tipoDocumento);
   formData.append("usuario", usuario);
   formData.append("archivo", archivo);
+  formData.append("nombreArchivo", archivo.name);
+  formData.append("mimeType", archivo.type);
 
-  const resp = await fetch(API_URL, { method: "POST", body: formData });
-  const data = await resp.json();
-  if (!data.success) throw new Error(data.message || "Error al subir el archivo");
-  return data.id;
+  try {
+    const resp = await fetch(API_URL, { method: "POST", body: formData });
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.message || "Error al subir el archivo");
+    alert("Archivo subido correctamente. ID: " + data.id);
+    await loadModule(tipo);
+  } catch (err) {
+    alert("Error al subir archivo: " + err.message);
+  }
 }
 
 async function updateItem(tipo, id, nombre, tipoDocumento) {
@@ -140,7 +152,9 @@ function renderTable(tipo, items) {
       <td>${item.Nombre}</td>
       <td>${item.Tipo}</td>
       <td><a href="${item.Link}" target="_blank">Ver Archivo</a></td>
-      <td><a href="${item["QR Online"]}" target="_blank">QR</a></td>
+      <td>
+        <img src="${item["QR Online"]}" width="50" height="50" style="cursor:pointer;" onclick="copyToClipboard('${item["QR Online"]}')">
+      </td>
       <td>${item["Usuario Crea"]}</td>
       <td>${item["Fecha Creado"]}</td>
       <td>
@@ -150,6 +164,15 @@ function renderTable(tipo, items) {
     `;
     tbody.appendChild(tr);
   });
+}
+
+/************************************************************
+ *                  COPIAR QR
+ ************************************************************/
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text)
+    .then(() => alert("URL del QR copiada al portapapeles"))
+    .catch(err => alert("Error al copiar: " + err));
 }
 
 /************************************************************
@@ -220,7 +243,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
 
-  const tipo = (user.TipoUsuario || "").trim().toLowerCase();
   await loadModule('comunicados');
 });
 
@@ -234,3 +256,4 @@ window.filterTable = filterTable;
 window.uploadItem = uploadItem;
 window.editItemHandler = editItemHandler;
 window.deleteItemHandler = deleteItemHandler;
+window.copyToClipboard = copyToClipboard;
