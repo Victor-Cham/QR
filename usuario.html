@@ -3,108 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Usuario - Documentos</title>
+  <title>Usuario - Visualización de Documentos</title>
   <link rel="stylesheet" href="./css/styles.css">
-
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f8; margin:0; }
-    header { background: #007bff; color: white; padding: 1rem; text-align:center; position:relative;}
-    header button { position:absolute; top:1rem; right:1rem; background:#dc3545; border:none; padding:0.5rem 1rem; color:white; border-radius:6px; cursor:pointer;}
-    header button:hover { background:#c82333;}
-    main { padding:2rem; max-width:900px; margin:auto; }
-    h2 { color:#333; margin-bottom:1rem; }
-    table { width:100%; border-collapse: collapse; margin-bottom:2rem; background:white; border-radius:8px; overflow:hidden; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
-    th, td { padding:0.8rem; border-bottom:1px solid #ddd; text-align:center;}
-    th { background:#007bff; color:white;}
-    tr:hover { background:#f1f1f1; }
-    a { color:#007bff; text-decoration:none; }
-    a:hover { text-decoration:underline; }
+    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; }
+    header { background: #17a2b8; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; font-size: 1.5rem; }
+    header button { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; background: #ff4b5c; color: white; }
+    main { padding: 2rem; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #e9ecef; }
+    a { color: #007bff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Bienvenido Usuario</h1>
-    <button onclick="logout()">Cerrar sesión</button>
-  </header>
-  <main>
-    <h2>Documentos Disponibles</h2>
-    <table id="tablaDocumentos">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Tipo</th>
-          <th>Link</th>
-          <th>QR</th>
-          <th>Fecha</th>
-          <th>Visitas</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
 
-    <h2>Anexos Disponibles</h2>
-    <table id="tablaAnexos">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Tipo</th>
-          <th>Link</th>
-          <th>QR</th>
-          <th>Fecha</th>
-          <th>Visitas</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </main>
+<header>
+  <h1>Panel Usuario</h1>
+  <button onclick="logout()">Cerrar Sesión</button>
+</header>
 
-  <script src="./js/app.js"></script>
-  <script>
-    function logout() {
-      localStorage.removeItem('usuario');
+<main>
+  <h2>Documentos</h2>
+  <table id="tableDocumentos">
+    <thead>
+      <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario Crea</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>Anexos</h2>
+  <table id="tableAnexos">
+    <thead>
+      <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Link</th><th>QR</th><th>Usuario Crea</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</main>
+
+<script src="./js/app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem('usuario'));
+    } catch(e) { localStorage.removeItem('usuario'); }
+    
+    if(!user || user.TipoUsuario.trim().toLowerCase() !== 'usuario') {
       window.location.href = "index.html";
+      return;
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const documentos = await getItems("documentos");
-        const anexos = await getItems("anexos");
+    try {
+      const documentos = await getItems("documentos");
+      const anexos = await getItems("anexos");
 
-        const tbodyDocs = document.getElementById('tablaDocumentos').querySelector('tbody');
-        tbodyDocs.innerHTML = "";
-        documentos.forEach(doc => {
-          const tr = document.createElement('tr');
+      function renderTable(items, tableId, idField) {
+        const tbody = document.getElementById(tableId).querySelector("tbody");
+        tbody.innerHTML = "";
+        items.forEach(item => {
+          const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td>${doc.Nombre}</td>
-            <td>${doc.Tipo}</td>
-            <td><a href="${doc.Link}" target="_blank">Ver</a></td>
-            <td><a href="${doc['QR Online']}" target="_blank">QR</a></td>
-            <td>${doc['Fecha Creado']}</td>
-            <td>${doc.VisitasTotales}</td>
+            <td>${item[idField]}</td>
+            <td>${item.Nombre}</td>
+            <td>${item.Tipo}</td>
+            <td><a href="${item.Link}" target="_blank">Ver</a></td>
+            <td><a href="${item["QR Online"]}" target="_blank">QR</a></td>
+            <td>${item["Usuario Crea"]}</td>
           `;
-          tbodyDocs.appendChild(tr);
+          tbody.appendChild(tr);
         });
-
-        const tbodyAnexos = document.getElementById('tablaAnexos').querySelector('tbody');
-        tbodyAnexos.innerHTML = "";
-        anexos.forEach(anexo => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${anexo.Nombre}</td>
-            <td>${anexo.Tipo}</td>
-            <td><a href="${anexo.Link}" target="_blank">Ver</a></td>
-            <td><a href="${anexo['QR Online']}" target="_blank">QR</a></td>
-            <td>${anexo['Fecha Creado']}</td>
-            <td>${anexo.VisitasTotales}</td>
-          `;
-          tbodyAnexos.appendChild(tr);
-        });
-
-      } catch(error) {
-        console.error(error);
-        alert("Error al cargar documentos o anexos");
       }
-    });
-  </script>
+
+      renderTable(documentos, "tableDocumentos", "DocumentoID");
+      renderTable(anexos, "tableAnexos", "AnexoID");
+
+    } catch(err) {
+      console.error(err);
+      alert("Error al cargar los datos. Intente recargar la página.");
+    }
+  });
+</script>
+
 </body>
 </html>
