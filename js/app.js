@@ -12,18 +12,20 @@ async function login(usuario, contrasena) {
     return;
   }
 
+  console.log("Intento de login:", usuario);
+
   try {
     const response = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`);
     const result = await response.json();
 
-    if (!result.success) {
+    if(!result.success) {
       alert(result.message || "Usuario o contraseña incorrecta");
       return;
     }
 
     localStorage.setItem('usuario', JSON.stringify(result.usuario));
-    const tipo = result.usuario.TipoUsuario.trim().toLowerCase();
 
+    const tipo = result.usuario.TipoUsuario.trim().toLowerCase();
     switch(tipo) {
       case "superadmin": window.location.href = "superadmin.html"; break;
       case "admin": window.location.href = "admin.html"; break;
@@ -89,8 +91,34 @@ async function deleteItem(tipo, id) {
  *                  RENDER TABLAS Y FILTROS
  ************************************************************/
 function renderTable(tipo, items) {
-  const tbody = document.getElementById(`${tipo}Table`).querySelector("tbody");
-  tbody.innerHTML = "";
+  const container = document.getElementById('moduleContainer');
+  if(!container) return;
+
+  if(items.length === 0) {
+    container.innerHTML = "<p>No hay registros.</p>";
+    return;
+  }
+
+  let html = `<table id="${tipo}Table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Link</th>
+                    <th>QR</th>
+                    <th>Usuario</th>
+                    <th>Fecha</th>
+                    <th>Visitas</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>`;
+  container.innerHTML = html;
+
+  const tbody = container.querySelector("tbody");
 
   items.forEach(item => {
     const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
@@ -102,48 +130,44 @@ function renderTable(tipo, items) {
       <td><a href="${item.Link}" target="_blank">Ver</a></td>
       <td><a href="${item["QR Online"]}" target="_blank">QR</a></td>
       <td>${item["Usuario Crea"]}</td>
+      <td>${item["Fecha Creado"]}</td>
+      <td>${item.VisitasTotales}</td>
       <td>
-        <button onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
-        <button onclick="deleteItemHandler('${tipo}', '${item[idKey]}')">Eliminar</button>
+        <button class="crud-btn edit" onclick="editItem('${tipo}', '${item[idKey]}')">Editar</button>
+        <button class="crud-btn delete" onclick="deleteItemHandler('${tipo}', '${item[idKey]}')">Eliminar</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-function filterTable(tipo) {
-  const input = document.getElementById(`search${capitalize(tipo)}`);
-  const filter = input.value.toLowerCase();
-  const rows = document.getElementById(`${tipo}Table`).querySelectorAll("tbody tr");
+function filterTable() {
+  const input = document.getElementById('searchInput');
+  const query = input.value.toLowerCase();
+  const rows = document.querySelectorAll("#moduleContainer table tbody tr");
 
   rows.forEach(row => {
     const nombre = row.cells[1].innerText.toLowerCase();
-    row.style.display = nombre.includes(filter) ? "" : "none";
+    row.style.display = nombre.includes(query) ? "" : "none";
   });
-}
-
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 /************************************************************
  *                  CRUD HANDLERS
  ************************************************************/
-async function addItem(event, tipo) {
-  event.preventDefault();
-  const form = event.target;
-  const nombre = form.nombre.value.trim();
-  const tipoDocumento = form.tipoDocumento.value.trim();
-  const link = form.link.value.trim();
+async function addItem() {
+  const nombre = prompt("Ingrese nombre:");
+  const tipoDocumento = prompt("Ingrese tipo:");
+  const link = prompt("Ingrese link:");
 
-  if(!nombre || !tipoDocumento || !link) return;
-
-  try {
-    await createItem(tipo, nombre, tipoDocumento, link);
-    form.reset();
-    await loadModule(tipo);
-  } catch(err) {
-    alert("Error al agregar item: " + err.message);
+  if(nombre && tipoDocumento && link) {
+    try {
+      await createItem(currentModule, nombre, tipoDocumento, link);
+      alert("Registro agregado correctamente");
+      await loadModule(currentModule);
+    } catch(err) {
+      alert("Error al agregar item: " + err.message);
+    }
   }
 }
 
@@ -176,31 +200,52 @@ async function deleteItemHandler(tipo, id) {
 /************************************************************
  *                  CARGA DE MÓDULOS
  ************************************************************/
-async function loadModule(tipo) {
-  const items = await getItems(tipo);
-  renderTable(tipo, items);
+let currentModule = 'comunicados';
+async function loadModule(module) {
+  currentModule = module;
+
+  document.querySelectorAll('.sidebar button').forEach(btn => {
+    btn.classList.remove('active');
+    if(btn.textContent.toLowerCase() === module) btn.classList.add('active');
+  });
+
+  const items = await getItems(module);
+  renderTable(module, items);
 }
 
 /************************************************************
  *          INICIALIZACIÓN SEGÚN ROL
  ************************************************************/
 document.addEventListener('DOMContentLoaded', async () => {
+  // Validar sesión
   let user = null;
   try {
-    const usuarioStr = localStorage.getItem('usuario');
-    if(usuarioStr) user = JSON.parse(usuarioStr);
+    user = JSON.parse(localStorage.getItem('usuario'));
   } catch(e) {
-    console.error("Error parseando sesión:", e);
     localStorage.removeItem('usuario');
   }
 
   if(!user) return;
 
-  const tipoUsuario = user.TipoUsuario?.trim().toLowerCase() || "";
+  document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
 
-  // Solo inicializar si es admin
-  if(tipoUsuario === "admin") {
-    // Cargar por defecto Comunicados
+  const tipo = user.TipoUsuario?.trim().toLowerCase() || "";
+
+  if(tipo === "admin") {
     await loadModule('comunicados');
   }
 });
+
+/************************************************************
+ *          EXPONER FUNCIONES AL GLOBAL
+ ************************************************************/
+window.login = login;
+window.logout = logout;
+window.getItems = getItems;
+window.createItem = createItem;
+window.updateItem = updateItem;
+window.deleteItemHandler = deleteItemHandler;
+window.addItem = addItem;
+window.editItem = editItem;
+window.loadModule = loadModule;
+window.filterTable = filterTable;
