@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="./css/styles.css">
   <style>
     body { font-family: Arial, sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f6f8; }
+
     /* Barra lateral */
     .sidebar { width: 220px; background: #17a2b8; color: white; display: flex; flex-direction: column; }
     .sidebar h2 { text-align: center; margin: 20px 0; font-size: 1.4rem; }
@@ -31,6 +32,14 @@
     button.delete { background: #dc3545; }
     .add-btn { background: #28a745; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
     input.search-input { padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 10px; width: 250px; }
+
+    /* Modal Formulario Agregar */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+    .modal-content { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 400px; position: relative; }
+    .modal-content h3 { margin-top: 0; }
+    .modal-content input { width: 100%; padding: 0.7rem; margin: 0.5rem 0; border-radius: 5px; border: 1px solid #ccc; }
+    .modal-content button { padding: 0.7rem 1rem; margin-top: 10px; border: none; border-radius: 5px; cursor: pointer; }
+    .modal-content .close { position: absolute; top: 10px; right: 10px; cursor: pointer; background: #dc3545; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; justify-content: center; align-items: center; }
   </style>
 </head>
 <body>
@@ -57,7 +66,7 @@
       <!-- Buscador y botón agregar -->
       <div id="moduleHeader" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre..." oninput="filterTable()">
-        <button class="add-btn" onclick="addItem()">Agregar</button>
+        <button class="add-btn" onclick="openModal()">Agregar</button>
       </div>
 
       <!-- Contenedor dinámico para tablas -->
@@ -65,99 +74,79 @@
     </div>
   </div>
 
+  <!-- Modal Formulario -->
+  <div id="modalForm" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h3>Agregar Registro</h3>
+      <form id="formAgregar">
+        <input type="text" name="nombre" placeholder="Nombre" required>
+        <input type="text" name="tipoDocumento" placeholder="Tipo" required>
+        <input type="text" name="link" placeholder="Link" required>
+        <button type="submit" style="background:#28a745; color:white;">Guardar</button>
+      </form>
+    </div>
+  </div>
+
   <script src="./js/app.js"></script>
   <script>
     let currentModule = 'comunicados';
-    let allItems = [];
 
+    // Cargar sesión
     document.addEventListener('DOMContentLoaded', async () => {
-      // Cargar usuario
       let user = null;
       try {
-        user = JSON.parse(localStorage.getItem('usuario'));
-      } catch(e) { localStorage.removeItem('usuario'); }
-      
-      if(!user) { window.location.href = "index.html"; return; }
+        const usuarioStr = localStorage.getItem('usuario');
+        if(usuarioStr) user = JSON.parse(usuarioStr);
+      } catch(e) {
+        localStorage.removeItem('usuario');
+      }
+
+      if(!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
       document.getElementById("userName").textContent = `Hola, ${user.Nombre || user.Email || 'Administrador'}`;
 
-      // Cargar módulo inicial
       await loadModule(currentModule);
     });
 
-    async function loadModule(module) {
-      currentModule = module;
+    // Modal
+    const modal = document.getElementById('modalForm');
+    function openModal() { modal.style.display = 'flex'; }
+    function closeModal() { modal.style.display = 'none'; }
 
-      // Actualizar botón activo
-      document.querySelectorAll('.sidebar button').forEach(btn => {
-        btn.classList.remove('active');
-        if(btn.textContent.toLowerCase() === module) btn.classList.add('active');
-      });
+    // Enviar formulario
+    document.getElementById('formAgregar').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const nombre = form.nombre.value.trim();
+      const tipoDocumento = form.tipoDocumento.value.trim();
+      const link = form.link.value.trim();
 
-      // Obtener datos
-      allItems = await getItems(module);
-      renderTable(allItems);
-    }
-
-    function renderTable(items) {
-      const container = document.getElementById('moduleContainer');
-      if(!container) return;
-
-      if(items.length === 0) { container.innerHTML = "<p>No hay registros.</p>"; return; }
-
-      let html = `<table>
-                    <tr>
-                      <th>ID</th>
-                      <th>Nombre</th>
-                      <th>Tipo</th>
-                      <th>Link</th>
-                      <th>QR</th>
-                      <th>Usuario</th>
-                      <th>Fecha</th>
-                      <th>Visitas</th>
-                      <th>Acciones</th>
-                    </tr>`;
-      items.forEach(item => {
-        const idKey = Object.keys(item).find(k => k.toLowerCase().includes("id"));
-        html += `<tr>
-                  <td>${item[idKey]}</td>
-                  <td>${item.Nombre}</td>
-                  <td>${item.Tipo}</td>
-                  <td><a href="${item.Link}" target="_blank">Ver</a></td>
-                  <td><img src="${item["QR Online"]}" width="50"/></td>
-                  <td>${item["Usuario Crea"]}</td>
-                  <td>${item["Fecha Creado"]}</td>
-                  <td>${item.VisitasTotales}</td>
-                  <td>
-                    <button class="crud-btn edit" onclick="editItem('${currentModule}', '${item[idKey]}')">Editar</button>
-                    <button class="crud-btn delete" onclick="deleteItem('${currentModule}', '${item[idKey]}')">Eliminar</button>
-                  </td>
-                </tr>`;
-      });
-      html += `</table>`;
-      container.innerHTML = html;
-    }
-
-    function filterTable() {
-      const query = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = allItems.filter(item => item.Nombre.toLowerCase().includes(query));
-      renderTable(filtered);
-    }
-
-    async function addItem() {
-      const nombre = prompt("Ingrese nombre:");
-      const tipoDocumento = prompt("Ingrese tipo:");
-      const link = prompt("Ingrese link:");
       if(nombre && tipoDocumento && link) {
         try {
           await createItem(currentModule, nombre, tipoDocumento, link);
           alert("Registro agregado correctamente");
+          closeModal();
+          form.reset();
           await loadModule(currentModule);
         } catch(err) {
           alert("Error al agregar registro: " + err.message);
         }
       }
-    }
+    });
 
+    // Filtrar tabla
+    function filterTable() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const rows = document.querySelectorAll("#moduleContainer table tbody tr");
+      rows.forEach(row => {
+        const nombre = row.cells[1].innerText.toLowerCase();
+        row.style.display = nombre.includes(query) ? "" : "none";
+      });
+    }
   </script>
 </body>
 </html>
