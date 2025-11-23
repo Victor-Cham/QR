@@ -46,6 +46,11 @@
       transition: 0.3s;
     }
     .login-container button:hover { background: #0056b3; }
+    .alert {
+      color: red;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
@@ -56,18 +61,19 @@
       <input type="text" id="usuario" placeholder="DNI o Correo" required>
       <input type="password" id="contrasena" placeholder="Contraseña" required>
       <button type="submit">Ingresar</button>
+      <div id="alert" class="alert" style="display:none;"></div>
     </form>
   </div>
 
   <script src="./js/app.js"></script>
   <script>
+    // Redirigir automáticamente si hay sesión activa
     document.addEventListener('DOMContentLoaded', () => {
-      // Si ya hay sesión activa, redirigir según rol
       try {
         const usuarioStr = localStorage.getItem('usuario');
-        if(usuarioStr) {
+        if (usuarioStr) {
           const usuario = JSON.parse(usuarioStr);
-          if(usuario && usuario.TipoUsuario) {
+          if (usuario && usuario.TipoUsuario) {
             const tipo = usuario.TipoUsuario.trim().toLowerCase();
             switch(tipo) {
               case "superadmin": window.location.href = "superadmin.html"; break;
@@ -76,18 +82,35 @@
             }
           }
         }
-      } catch(e) {
-        localStorage.removeItem('usuario');
+      } catch (error) {
+        console.error("Error leyendo la sesión:", error);
+        localStorage.removeItem('usuario'); // limpiar sesión corrupta
+      }
+    });
+
+    // Manejo del formulario de login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const usuario = document.getElementById('usuario').value.trim();
+      const contrasena = document.getElementById('contrasena').value.trim();
+      const alertDiv = document.getElementById('alert');
+      alertDiv.style.display = 'none';
+      alertDiv.textContent = '';
+
+      if(!usuario || !contrasena) {
+        alertDiv.textContent = 'Ingrese usuario y contraseña.';
+        alertDiv.style.display = 'block';
+        return;
       }
 
-      // Asociar login al form
-      const form = document.getElementById('loginForm');
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const usuario = document.getElementById('usuario').value.trim();
-        const contrasena = document.getElementById('contrasena').value.trim();
-        login(usuario, contrasena);
-      });
+      try {
+        // Llamar a la función login de app.js
+        await login(usuario, contrasena);
+      } catch(err) {
+        console.error(err);
+        alertDiv.textContent = 'Error al intentar iniciar sesión. Intente más tarde.';
+        alertDiv.style.display = 'block';
+      }
     });
   </script>
 </body>
