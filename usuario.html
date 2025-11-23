@@ -2,74 +2,91 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuario - Documentos</title>
   <link rel="stylesheet" href="css/styles.css">
-  <title>Panel Usuario</title>
-  <style>
-    body { font-family: Arial; background: #f8f9fa; margin: 0; }
-    header { background: #6c757d; color: white; padding: 1rem; text-align: center; }
-    main { padding: 1rem; }
-    .module-buttons { display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem; }
-    .module-buttons button {
-      padding: 1rem 2rem;
-      border: none; background: #17a2b8; color: white;
-      border-radius: 6px; cursor: pointer; transition: .3s;
-    }
-    .module-buttons button:hover { background: #117a8b; }
-  </style>
 </head>
-
 <body>
-<header>
   <h1>Bienvenido Usuario</h1>
-</header>
+  <button onclick="logout()">Cerrar sesión</button>
 
-<main>
-  <div class="module-buttons">
-    <button onclick="cargarModulo('Comunicados')">Ver Comunicados</button>
-    <button onclick="cargarModulo('Documentos')">Ver Documentos</button>
-    <button onclick="cargarModulo('Anexos')">Ver Anexos</button>
-  </div>
+  <h2>Documentos Disponibles</h2>
+  <table id="tablaDocumentos" border="1">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Link</th>
+        <th>QR Online</th>
+        <th>Fecha Creado</th>
+        <th>Visitas</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-  <div id="contenido">
-    <p>Seleccione una opción para visualizar información.</p>
-  </div>
-</main>
+  <h2>Anexos Disponibles</h2>
+  <table id="tablaAnexos" border="1">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Link</th>
+        <th>QR Online</th>
+        <th>Fecha Creado</th>
+        <th>Visitas</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<script src="js/app.js"></script>
-<script>
-  async function cargarModulo(modulo) {
-    const contenido = document.getElementById("contenido");
-    contenido.innerHTML = `<p>Cargando ${modulo}...</p>`;
-
-    try {
-      const response = await fetch(`${API_URL}?action=get${modulo}`);
-      const datos = await response.json();
-
-      if (datos.length === 0) {
-        contenido.innerHTML = `<p>No hay datos.</p>`;
-        return;
-      }
-
-      let html = `<h3>${modulo}</h3><table><tr>`;
-      for (let key in datos[0]) html += `<th>${key}</th>`;
-      html += "</tr>";
-
-      datos.forEach(row => {
-        html += "<tr>";
-        for (let key in row) html += `<td>${row[key]}</td>`;
-        html += "</tr>";
-      });
-
-      html += "</table>";
-      contenido.innerHTML = html;
-
-    } catch (e) {
-      contenido.innerHTML = `<p>Error al cargar la información.</p>`;
+  <script src="js/app.js"></script>
+  <script>
+    function logout() {
+      localStorage.removeItem('usuario');
+      window.location.href = "index.html";
     }
-  }
-</script>
 
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const documentos = await getItems("documentos");
+        const anexos = await getItems("anexos");
+
+        const tbodyDocs = document.getElementById('tablaDocumentos').querySelector('tbody');
+        tbodyDocs.innerHTML = "";
+        documentos.forEach(doc => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${doc.Nombre}</td>
+            <td>${doc.Tipo}</td>
+            <td><a href="${doc.Link}" target="_blank">Ver</a></td>
+            <td><a href="${doc['QR Online']}" target="_blank">QR</a></td>
+            <td>${doc['Fecha Creado']}</td>
+            <td>${doc.VisitasTotales}</td>
+          `;
+          tbodyDocs.appendChild(tr);
+        });
+
+        const tbodyAnexos = document.getElementById('tablaAnexos').querySelector('tbody');
+        tbodyAnexos.innerHTML = "";
+        anexos.forEach(anexo => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${anexo.Nombre}</td>
+            <td>${anexo.Tipo}</td>
+            <td><a href="${anexo.Link}" target="_blank">Ver</a></td>
+            <td><a href="${anexo['QR Online']}" target="_blank">QR</a></td>
+            <td>${anexo['Fecha Creado']}</td>
+            <td>${anexo.VisitasTotales}</td>
+          `;
+          tbodyAnexos.appendChild(tr);
+        });
+
+      } catch(error) {
+        console.error(error);
+        alert("Error al cargar documentos o anexos");
+      }
+    });
+  </script>
 </body>
 </html>
 
